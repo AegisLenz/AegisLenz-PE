@@ -27,7 +27,7 @@ async def initialize_conversation_histories():
     global prompt_content_text, prompt_content, prompt_content_result
     prompt_content_text, prompt_content, prompt_content_result = await asyncio.gather(
         read_file_async("DetailPr.txt"),
-        read_file_async("firstPT.txt"),
+        read_file_async("onlyES.txt"),
         read_file_async("ResultPr.txt")
     )
 
