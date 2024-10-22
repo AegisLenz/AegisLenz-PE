@@ -13,7 +13,7 @@ client_result = OpenAI(api_key = api_key)
 with open("DetailPr.txt", "r", encoding="utf-8") as file:
     prompt_content_text = file.read()
 
-with open("firstPT.txt", "r", encoding="utf-8") as file:
+with open("onlyES.txt", "r", encoding="utf-8") as file:
     prompt_content = file.read()
 
 with open("ResultPr.txt", "r", encoding="utf-8") as file:

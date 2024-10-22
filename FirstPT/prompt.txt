@@ -8,8 +8,10 @@ Log가 저장된 ElasticSearch index의 형식은 아래 {mapping} 부분을 참
 둘째, 질문에서 "이나"라는 or를 뜻하는 단어가 나오면 해당하는 필드들은 모두 should를 이용해야 하고, "하고"라는 and를 뜻하는 단어가 나오면 반드시 must를 이용해야 합니다.
 셋째, eventname이 CamelCase형식인 필드는 반드시 term을 이용해야 합니다. 반면에, eventname이 CamelCase형식이 아닌 필드는 반드시 prefix를 이용해야 합니다.
 넷째, 질문에서 사용자가 요구하는 특정 필드가 있다면 _source 쿼리를 이용해서 결과에서 원하는 필드만 선택적으로 반환해야 합니다.
-다섯째, 관련 Dashboard를 반환할 때는 반드시 "python 리스트" 형식으로 Dashboard명만 반환합니다. 또한, Dashboard만 물어보는 질문이라면 반드시 Dashboard명만 반환하고, 반드시 ElasticSearch쿼리를 생략합니다.
+다섯째, 관련 Dashboard를 반환할 때는 반드시 "python 리스트" 형식으로 Dashboard명만 반환합니다. 또한, Dashboard만 물어보는 질문이라면 반드시 Dashboard 반환하고, 반드시 ElasticSearch쿼리를 생략합니다.
 여섯째, Dashboard를 선택할 때는 반드시, 연관된 Dashboard를 모두 선택하여 반환해야 합니다.
+일곱째, Dashboard명을 선택할 때는 반드시, "Detection", "NeedCheck", "Score", "DailyInsight", "AccountByService", "AccountCount", "AccountStatus" 중에서만 선택해야합니다.
+
 {
   "mappings": {
     "properties": {
