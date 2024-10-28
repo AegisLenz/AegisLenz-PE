@@ -57,7 +57,7 @@ while True:
     # classify_response에서 분류 결과 추출
     try:
         classify_data = json.loads(classify_response)
-        classification_results = classify_data.get("topics", [])  # 'topics'에 여러 분류 값이 포함됨
+        classification_results = classify_data.get("topics", []) # 'topics'에 여러 분류 값이 포함됨
 
         for classification_result in classification_results:
             # 분류 결과에 따른 프롬프트 설정
@@ -100,8 +100,7 @@ while True:
                     response_format={"type": "json_object"}
                 )
                 detail_answer = response.choices[0].message.content
-                histories["Detail"].append({"role": "assistant", "content": detail_answer})
-                
+                histories["Detail"].append({"role": "assistant", "content": detail_answer}) 
 
             # 히스토리 관리 (최대 10개 유지)
             if len(histories[target_prompt]) > 10:
@@ -122,6 +121,24 @@ while True:
                     print("Detail:\n", json.dumps(response_json, indent=4, ensure_ascii=False))
                 except json.JSONDecodeError:
                     print("Detail:\n", detail_answer)
+
+            # Dashboard 프롬프트 호출 및 응답 생성
+            if target_prompt in ["onlyES", "onlyDB", "policy"]:
+                response = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=histories["Dash"],
+                    response_format={"type": "json_object"}
+                )
+                detail_answer = response.choices[0].message.content
+                histories["Dash"].append({"role": "assistant", "content": detail_answer}) 
+            
+            # Dash 응답 출력
+            if target_prompt in ["onlyES", "onlyDB","policy"]:
+                try:
+                    response_json = json.loads(detail_answer)
+                    print("Dash:\n", json.dumps(response_json, indent=4, ensure_ascii=False))
+                except json.JSONDecodeError:
+                    print("Dash:\n", detail_answer)
 
             # 히스토리 저장
             save_history(histories[target_prompt], history_files[target_prompt])
