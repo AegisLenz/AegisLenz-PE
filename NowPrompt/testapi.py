@@ -16,8 +16,8 @@ engineering_dir = os.path.join(current_dir, 'Engineering')
 prompt_files = {
     "Classify": os.path.join(engineering_dir, 'ClassifyPr.txt'),
     "Dash": os.path.join(engineering_dir, 'DashbPr.txt'),
-    "onlyES": os.path.join(engineering_dir, 'onlyES.txt'),
-    "onlyDB": os.path.join(engineering_dir, 'onlyMDB.txt'),
+    "ES": os.path.join(engineering_dir, 'onlyES.txt'),
+    "DB": os.path.join(engineering_dir, 'onlyMDB.txt'),
     "Detail": os.path.join(engineering_dir, 'DetailPr.txt'),
     "policy": os.path.join(engineering_dir, 'policy.txt')
 }
@@ -34,6 +34,36 @@ def save_history(history, filename):
         for entry in history:
             file.write(f"{entry['role']}: {entry['content']}\n")
 
+# 응답 생성 및 출력
+def generate_response(client, model, messages):
+    response = client.chat.completions.create(
+        model=model,
+        messages=messages,
+        response_format={"type": "json_object"}
+    )
+    return response.choices[0].message.content
+
+# 응답 출력
+def print_response(target_prompt, clean_answer):
+    try:
+        response_json = json.loads(clean_answer)
+        print(f"{target_prompt}:\n", json.dumps(response_json, indent=4, ensure_ascii=False))
+    except json.JSONDecodeError:
+        print(f"{target_prompt}:\n", clean_answer)
+
+# 히스토리 파일 저장 함수
+def save_history(history, filename):
+    with open(filename, "w", encoding="utf-8") as file:
+        for entry in history:
+            file.write(f"{entry['role']}: {entry['content']}\n")
+
+# 히스토리 관리 함수
+def manage_history(histories, key, max_length=10):
+    if len(histories[key]) > max_length:
+        # 오래된 항목 제거
+        histories[key].pop(1)
+
+
 # 프롬프트와 히스토리 초기화
 histories = {name: [{"role": "system", "content": load_prompt(path)}] for name, path in prompt_files.items()}
 
@@ -46,104 +76,86 @@ while True:
     histories["Classify"].append({"role": "user", "content": query})
 
     # Classify 프롬프트에 대해 응답 생성
-    response = client.chat.completions.create(
-        model="gpt-4o-mini",
-        messages=histories["Classify"],
-        response_format={"type": "json_object"}
-    )
-    classify_response = response.choices[0].message.content
+    classify_response = generate_response(client, "gpt-4o-mini", histories["Classify"])
     print(classify_response, "\n")
 
     # classify_response에서 분류 결과 추출
     try:
         classify_data = json.loads(classify_response)
-        classification_results = classify_data.get("topics", []) # 'topics'에 여러 분류 값이 포함됨
 
-        for classification_result in classification_results:
-            # 분류 결과에 따른 프롬프트 설정
-            if classification_result == "onlyES":
-                target_prompt = "onlyES"
-            elif classification_result == "onlyMDB":
-                target_prompt = "onlyDB"
-            elif classification_result == "DashbPr":
-                target_prompt = "Dash"
-            elif classification_result == "policy":
-                target_prompt = "policy"
-            else:
-                target_prompt = "None"  # 예외 처리 시 기본값
+        # 'topics' 키의 값을 직접 가져와 확인
+        classification_result = classify_data.get("topics")  # 'topics'가 단일 값으로 가정
+        
+        # 분류 결과에 따른 프롬프트 설정
+        if classification_result == "ES":
+            target_prompt = "ES"
+        elif classification_result == "DB":
+            target_prompt = "DB"
+        elif classification_result == "Dash":
+            target_prompt = "Dash"
+        elif classification_result == "policy":
+            target_prompt = "policy"
+        else:
+            target_prompt = "None"  # 기본값
 
-            # 각 프롬프트에 사용자 질문 추가 및 응답 생성
-            histories[target_prompt].append({"role": "user", "content": query})
-            response = client.chat.completions.create(
-                model="gpt-4o-mini",
-                messages=histories[target_prompt],
-                response_format={"type": "json_object"}
-            )
-            clean_answer = response.choices[0].message.content
+        # 각 프롬프트에 사용자 질문 추가 및 응답 생성
+        histories[target_prompt].append({"role": "user", "content": query})
 
-            # onlyES와 onlyDB 응답을 저장하고 Detail 프롬프트 호출 추가
-            if target_prompt == "onlyES":
-                onlyES_response = clean_answer
-                # Detail 프롬프트에도 저장
-                histories["Detail"].append({"role": "user", "content": f"{query}\nES 응답: {onlyES_response}"})
+        clean_answer = generate_response(client, "gpt-4o-mini", histories[target_prompt])
 
-            elif target_prompt == "onlyDB":
-                onlyDB_response = clean_answer
-                # Detail 프롬프트에도 저장
-                histories["Detail"].append({"role": "user", "content": f"{query}\nDB 응답: {onlyDB_response}"})
+        # ES와 DB 응답을 저장하고 Detail 프롬프트 호출 추가
+        if target_prompt == "ES":
+            ES_response = clean_answer
+            # Detail 프롬프트에도 저장
+            histories["Detail"].append({"role": "user", "content": f"{query}\nES 응답: {ES_response}"})
 
-            # Detail 프롬프트 호출 및 응답 생성
-            if target_prompt in ["onlyES", "onlyDB"]:
-                response = client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=histories["Detail"],
-                    response_format={"type": "json_object"}
-                )
-                detail_answer = response.choices[0].message.content
-                histories["Detail"].append({"role": "assistant", "content": detail_answer}) 
+        elif target_prompt == "DB":
+            DB_response = clean_answer
+            # Detail 프롬프트에도 저장
+            histories["Detail"].append({"role": "user", "content": f"{query}\nDB 응답: {DB_response}"})
 
-            # 히스토리 관리 (최대 10개 유지)
-            if len(histories[target_prompt]) > 10:
-                histories[target_prompt].pop(1)
-            histories[target_prompt].append({"role": "assistant", "content": clean_answer})
+        # 응답 출력 (target 프롬프트)
+        print_response(target_prompt, clean_answer)
+    
+        # 히스토리 관리 (최대 10개 유지)
+        manage_history(histories, target_prompt)
+
+        histories[target_prompt].append({"role": "assistant", "content": clean_answer})
+        
+        # Detail 프롬프트 호출 및 응답 생성
+        if target_prompt in ["ES", "DB"]:
+            
+            detail_answer = generate_response(client, "gpt-4o-mini", histories["Detail"])            
 
             # 응답 출력
-            try:
-                response_json = json.loads(clean_answer)
-                print(f"{target_prompt}:\n", json.dumps(response_json, indent=4, ensure_ascii=False))
-            except json.JSONDecodeError:
-                print(f"{target_prompt}:\n", clean_answer)
+            print_response("Detail", detail_answer)
             
-            # Detail 응답 출력
-            if target_prompt in ["onlyES", "onlyDB"]:
-                try:
-                    response_json = json.loads(detail_answer)
-                    print("Detail:\n", json.dumps(response_json, indent=4, ensure_ascii=False))
-                except json.JSONDecodeError:
-                    print("Detail:\n", detail_answer)
+            # 히스토리 관리 (최대 10개 유지) - Detail
+            manage_history(histories, "Detail")
 
-            # Dashboard 프롬프트 호출 및 응답 생성
-            if target_prompt in ["onlyES", "onlyDB", "policy"]:
-                response = client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=histories["Dash"],
-                    response_format={"type": "json_object"}
-                )
-                detail_answer = response.choices[0].message.content
-                histories["Dash"].append({"role": "assistant", "content": detail_answer}) 
+            histories["Detail"].append({"role": "assistant", "content": detail_answer}) 
+
+        # Dashboard 프롬프트 호출 및 응답 생성
+        if target_prompt in ["ES", "DB", "policy"]:
+            histories["Dash"].append({"role": "user", "content": query})
             
-            # Dash 응답 출력
-            if target_prompt in ["onlyES", "onlyDB","policy"]:
-                try:
-                    response_json = json.loads(detail_answer)
-                    print("Dash:\n", json.dumps(response_json, indent=4, ensure_ascii=False))
-                except json.JSONDecodeError:
-                    print("Dash:\n", detail_answer)
+            # 사용자 대시보드 질문 추가 및 응답 생성
+            dash_answer = generate_response(client, "gpt-4o-mini", histories["Dash"]) 
+            
+            # 대시보드 응답 출력
+            print_response("Dash", dash_answer)
+        
+            # 히스토리 관리 (최대 10개 유지) -Dash
+            manage_history(histories, "Dash")
 
-            # 히스토리 저장
-            save_history(histories[target_prompt], history_files[target_prompt])
-            save_history(histories["Detail"], history_files["Detail"])
+            histories["Dash"].append({"role": "assistant", "content": dash_answer}) 
 
-
+        # 히스토리 저장
+        save_history(histories[target_prompt], history_files[target_prompt])
+        save_history(histories["Dash"], history_files["Dash"])
+        save_history(histories["Detail"], history_files["Detail"])
+       
     except json.JSONDecodeError:
         print("Classify 응답이 JSON 형식이 아닙니다:", classify_response)
+
+
