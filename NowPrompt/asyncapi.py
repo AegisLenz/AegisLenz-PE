@@ -22,7 +22,7 @@ prompt_files = {
     "ES": os.path.join(engineering_dir, 'onlyES.txt'),
     "DB": os.path.join(engineering_dir, 'onlyMDB.txt'),
     "Detail": os.path.join(engineering_dir, 'DetailPr.txt'),
-    "policy": os.path.join(engineering_dir, 'policy.txt')
+    "Policy": os.path.join(engineering_dir, 'policy.txt')
 }
 history_files = {name: f"history_{name}.txt" for name in prompt_files}
 
@@ -99,8 +99,8 @@ async def main():
                 target_prompt = "DB"
             elif classification_result == "Dash":
                 target_prompt = "Dash"
-            elif classification_result == "policy":
-                target_prompt = "policy"
+            elif classification_result == "Policy":
+                target_prompt = "Policy"
             else:
                 target_prompt = "None"  # 기본값
 
@@ -109,7 +109,6 @@ async def main():
             # (비동기) 각 프롬프트에 사용자 질문 추가 및 응답 생성
             clean_answer_task = asyncio.create_task(generate_response(client, "gpt-4o-mini", histories[target_prompt]))
 
-            
             # ES와 DB 응답을 저장하고 Detail 프롬프트 호출 추가
             if target_prompt == "ES":
                 clean_answer = await clean_answer_task
@@ -123,6 +122,7 @@ async def main():
                 # Detail 프롬프트에도 저장
                 histories["Detail"].append({"role": "user", "content": f"{query}\nDB 응답: {DB_response}"})
             
+            clean_answer = await clean_answer_task
             # 비동기 응답 출력 target_prompt
             await print_response(target_prompt, clean_answer) # clean_answer를 await로 가져옴
 
@@ -149,7 +149,7 @@ async def main():
 
             
             # Dash 응답 출력
-            if target_prompt in ["ES", "DB","policy"]:
+            if target_prompt in ["ES", "DB","Policy"]:
                    
                 histories["Dash"].append({"role": "user", "content": query})
                 

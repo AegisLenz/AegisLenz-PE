@@ -19,7 +19,7 @@ prompt_files = {
     "ES": os.path.join(engineering_dir, 'onlyES.txt'),
     "DB": os.path.join(engineering_dir, 'onlyMDB.txt'),
     "Detail": os.path.join(engineering_dir, 'DetailPr.txt'),
-    "policy": os.path.join(engineering_dir, 'policy.txt')
+    "Policy": os.path.join(engineering_dir, 'policy.txt')
 }
 history_files = {name: f"history_{name}.txt" for name in prompt_files}
 
@@ -93,8 +93,8 @@ while True:
             target_prompt = "DB"
         elif classification_result == "Dash":
             target_prompt = "Dash"
-        elif classification_result == "policy":
-            target_prompt = "policy"
+        elif classification_result == "Policy":
+            target_prompt = "Policy"
         else:
             target_prompt = "None"  # 기본값
 
@@ -136,7 +136,7 @@ while True:
             histories["Detail"].append({"role": "assistant", "content": detail_answer}) 
 
         # Dashboard 프롬프트 호출 및 응답 생성
-        if target_prompt in ["ES", "DB", "policy"]:
+        if target_prompt in ["ES", "DB", "Policy"]:
             histories["Dash"].append({"role": "user", "content": query})
             
             # 사용자 대시보드 질문 추가 및 응답 생성
