@@ -83,6 +83,8 @@ async def main():
         # Classify 프롬프트에 대해 응답 생성
         classify_response = await generate_response(client, "gpt-4o-mini", histories["Classify"])
         print(classify_response, "\n")
+        histories["Classify"].append({"role": "assistant", "content": classify_response})  
+
 
         # classify_response에서 분류 결과 추출
         try:
@@ -147,6 +149,8 @@ async def main():
             # 비동기 히스토리 저장 호출
             await save_history(histories[target_prompt], history_files[target_prompt])
             await save_history(histories["Detail"], history_files["Detail"])
+            await save_history(histories["Classify"], history_files["Classify"])
+
                             
         except json.JSONDecodeError:
             print("Classify 응답이 JSON 형식이 아닙니다:", classify_response)
