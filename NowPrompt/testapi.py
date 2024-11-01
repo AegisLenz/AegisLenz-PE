@@ -90,66 +90,61 @@ while True:
 
 
     # classify_response에서 분류 결과 추출
-    try:
-        classify_data = json.loads(classify_response)
+    classify_data = json.loads(classify_response)
 
-        # 'topics' 키의 값을 직접 가져와 확인
-        classification_result = classify_data.get("topics")  # 'topics'가 단일 값으로 가정
-        
-        # 분류 결과에 따른 프롬프트 설정
-        if classification_result == "ES":
-            target_prompt = "ES"
-        elif classification_result == "DB":
-            target_prompt = "DB"
-        elif classification_result == "Policy":
-            target_prompt = "Policy"
-        else:
-            target_prompt = "None"  # 기본값
-
-        # 각 프롬프트에 사용자 질문 추가 및 응답 생성
-        histories[target_prompt].append({"role": "user", "content": query})
-
-        clean_answer = generate_response(client, "gpt-4o-mini", histories[target_prompt])
-
-        # ES와 DB 응답을 저장하고 Detail 프롬프트 호출 추가
-        if target_prompt == "ES":
-            ES_response = clean_answer
-            # Detail 프롬프트에도 저장
-            histories["Detail"].append({"role": "user", "content": f"{query}\nES 응답: {ES_response}"})
-
-        elif target_prompt == "DB":
-            DB_response = clean_answer
-            # Detail 프롬프트에도 저장
-            histories["Detail"].append({"role": "user", "content": f"{query}\nDB 응답: {DB_response}"})
-
-        # 응답 출력 (target 프롬프트)
-        print_response(target_prompt, clean_answer)
+    # 'topics' 키의 값을 직접 가져와 확인
+    classification_result = classify_data.get("topics")  # 'topics'가 단일 값으로 가정
     
-        # 히스토리 관리 (최대 10개 유지)
-        manage_history(histories, target_prompt)
+    # 분류 결과에 따른 프롬프트 설정
+    if classification_result == "ES":
+        target_prompt = "ES"
+    elif classification_result == "DB":
+        target_prompt = "DB"
+    elif classification_result == "Policy":
+        target_prompt = "Policy"
+    else:
+        target_prompt = "None"  # 기본값
 
-        histories[target_prompt].append({"role": "assistant", "content": clean_answer})
+    # 각 프롬프트에 사용자 질문 추가 및 응답 생성
+    histories[target_prompt].append({"role": "user", "content": query})
+
+    clean_answer = generate_response(client, "gpt-4o-mini", histories[target_prompt])
+
+    # ES와 DB 응답을 저장하고 Detail 프롬프트 호출 추가
+    if target_prompt == "ES":
+        ES_response = clean_answer
+        # Detail 프롬프트에도 저장
+        histories["Detail"].append({"role": "user", "content": f"{query}\nES 응답: {ES_response}"})
+
+    elif target_prompt == "DB":
+        DB_response = clean_answer
+        # Detail 프롬프트에도 저장
+        histories["Detail"].append({"role": "user", "content": f"{query}\nDB 응답: {DB_response}"})
+
+    # 응답 출력 (target 프롬프트)
+    print_response(target_prompt, clean_answer)
+
+    # 히스토리 관리 (최대 10개 유지)
+    manage_history(histories, target_prompt)
+
+    histories[target_prompt].append({"role": "assistant", "content": clean_answer})
+    
+    # Detail 프롬프트 호출 및 응답 생성
+    if target_prompt in ["ES", "DB"]:
         
-        # Detail 프롬프트 호출 및 응답 생성
-        if target_prompt in ["ES", "DB"]:
-            
-            #응답 생성
-            detail_response = Detail_response(client, "gpt-4o-mini" , histories["Detail"])
-            # 응답 출력
-            print_response("Detail", detail_response)
+        #응답 생성
+        detail_response = Detail_response(client, "gpt-4o-mini" , histories["Detail"])
+        # 응답 출력
+        print_response("Detail", detail_response)
 
-            
-            # 히스토리 관리 (최대 10개 유지) - Detail
-            manage_history(histories, "Detail")
+        
+        # 히스토리 관리 (최대 10개 유지) - Detail
+        manage_history(histories, "Detail")
 
-            histories["Detail"].append({"role": "assistant", "content": detail_response})  
+        histories["Detail"].append({"role": "assistant", "content": detail_response})  
 
-        # 히스토리 저장
-        save_history(histories[target_prompt], history_files[target_prompt])
-        save_history(histories["Detail"], history_files["Detail"])
-        save_history(histories["Classify"], history_files["Classify"])
-       
-    except json.JSONDecodeError:
-        print("Classify 응답이 JSON 형식이 아닙니다:", classify_response)
-
+    # 히스토리 저장
+    save_history(histories[target_prompt], history_files[target_prompt])
+    save_history(histories["Detail"], history_files["Detail"])
+    save_history(histories["Classify"], history_files["Classify"])
 
