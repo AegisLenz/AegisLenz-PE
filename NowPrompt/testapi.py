@@ -15,7 +15,6 @@ engineering_dir = os.path.join(current_dir, 'Engineering')
 # 파일 경로와 이름 정의
 prompt_files = {
     "Classify": os.path.join(engineering_dir, 'ClassifyPr.txt'),
-    "Dash": os.path.join(engineering_dir, 'DashbPr.txt'),
     "ES": os.path.join(engineering_dir, 'onlyES.txt'),
     "DB": os.path.join(engineering_dir, 'onlyMDB.txt'),
     "Detail": os.path.join(engineering_dir, 'DetailPr.txt'),
@@ -91,8 +90,6 @@ while True:
             target_prompt = "ES"
         elif classification_result == "DB":
             target_prompt = "DB"
-        elif classification_result == "Dash":
-            target_prompt = "Dash"
         elif classification_result == "Policy":
             target_prompt = "Policy"
         else:
@@ -133,26 +130,10 @@ while True:
             # 히스토리 관리 (최대 10개 유지) - Detail
             manage_history(histories, "Detail")
 
-            histories["Detail"].append({"role": "assistant", "content": detail_answer}) 
-
-        # Dashboard 프롬프트 호출 및 응답 생성
-        if target_prompt in ["ES", "DB", "Policy"]:
-            histories["Dash"].append({"role": "user", "content": query})
-            
-            # 사용자 대시보드 질문 추가 및 응답 생성
-            dash_answer = generate_response(client, "gpt-4o-mini", histories["Dash"]) 
-            
-            # 대시보드 응답 출력
-            print_response("Dash", dash_answer)
-        
-            # 히스토리 관리 (최대 10개 유지) -Dash
-            manage_history(histories, "Dash")
-
-            histories["Dash"].append({"role": "assistant", "content": dash_answer}) 
+            histories["Detail"].append({"role": "assistant", "content": detail_answer})  
 
         # 히스토리 저장
         save_history(histories[target_prompt], history_files[target_prompt])
-        save_history(histories["Dash"], history_files["Dash"])
         save_history(histories["Detail"], history_files["Detail"])
        
     except json.JSONDecodeError:
