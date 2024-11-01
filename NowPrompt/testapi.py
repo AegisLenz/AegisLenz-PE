@@ -2,7 +2,6 @@ import os
 import json
 from dotenv import load_dotenv
 from openai import OpenAI
-from pydantic import BaseModel
 
 # 환경 변수 로드 및 API 클라이언트 설정
 load_dotenv()
@@ -63,18 +62,6 @@ def manage_history(histories, key, max_length=10):
         # 오래된 항목 제거
         histories[key].pop(1)
 
-class Detail(BaseModel):
-    explanation: str
-
-# detail 응답 생성
-def detail_summary(client, model, messages):
-    completion = client.beta.chat.completions.parse(
-        model=model,
-        messages= messages,
-        response_format=Detail,
-    )
-    return completion.choices[0].message.parsed
-
 
 # 프롬프트와 히스토리 초기화
 histories = {name: [{"role": "system", "content": load_prompt(path)}] for name, path in prompt_files.items()}
@@ -89,7 +76,6 @@ while True:
 
     # Classify 프롬프트에 대해 응답 생성
     classify_response = generate_response(client, "gpt-4o-mini", histories["Classify"])
-
     print(classify_response, "\n")
     histories["Classify"].append({"role": "assistant", "content": classify_response})  
 
@@ -138,17 +124,15 @@ while True:
         # Detail 프롬프트 호출 및 응답 생성
         if target_prompt in ["ES", "DB"]:
             
-            #응답 생성
-            detail_response = detail_summary(client, "gpt-4o-mini" , histories["Detail"])
-            Explanation = detail_response.explanation
+            detail_answer = generate_response(client, "gpt-4o-mini", histories["Detail"])            
+
             # 응답 출력
-            print("Detail설명")
-            print(Explanation)
+            print_response("Detail", detail_answer)
             
             # 히스토리 관리 (최대 10개 유지) - Detail
             manage_history(histories, "Detail")
 
-            histories["Detail"].append({"role": "assistant", "content": Explanation})  
+            histories["Detail"].append({"role": "assistant", "content": detail_answer})  
 
         # 히스토리 저장
         save_history(histories[target_prompt], history_files[target_prompt])
