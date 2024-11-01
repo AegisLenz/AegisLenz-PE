@@ -8,9 +8,11 @@
 
 ## 파일 설명
 ### NowPrompt
-- Engineering/DashbPr.txt : Dashboard만 json 반환 PE
+- Engineering/ClassifyPr.txt : ES, DB, policy 분류하여 json 반환 PE
 - Engineering/DetailPr.txt : 설명만 json 반환 PE
 - Engineering/onlyES.txt : ES 쿼리만 json 반환 PE
+- Engineering/onlyMDB.txt : MongoDB 쿼리만 json 반환 PE
+- Engineering/policy.txt : 정책관련 질의 처리 json 반환 PE
 - asyncapi.py : 비동기 처리 코드
 - testapi.py : 프롬프트 로직 구현 코드
 
