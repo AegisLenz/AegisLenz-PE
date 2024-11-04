@@ -61,23 +61,29 @@ def manage_history(histories, key, max_length=10):
 # 프롬프트와 히스토리 초기화
 histories = {name: [{"role": "system", "content": load_prompt(path)}] for name, path in prompt_files.items()}
 
-# 대화 진행 루프
-while True:
-    question = input("\n질문: ")
-    query = f"사용자의 자연어 질문: {question}"
 
-    # 사용자 질문 추가 (Classify 프롬프트에 대해 질문을 보냄)
-    histories["report"].append({"role": "user", "content": query})
+attack_time =  "2024년 09월 18일 07:20 KST"
+attack_type = "Exfiltration, Exfiltration Over Alternative Protocol" 
+user_json_logs = ''' '''
 
-    # Classify 프롬프트에 대해 응답 생성
-    report_response = generate_response(client, "gpt-4o-mini", histories["report"])
-    print(report_response, "\n")
-    histories["report"].append({"role": "assistant", "content": report_response})
+# 동적 값을 삽입하여 최종 프롬프트 구성
+prompt_text = histories["report"][0]['content']
+report_prompt = prompt_text.format(
+    attack_time=attack_time,
+    attack_type=attack_type,
+    logs=user_json_logs
+)
+# 사용자 질문 추가 (Classify 프롬프트에 대해 질문을 보냄)
+histories["report"].append({"role": "user", "content": report_prompt})
+
+# Classify 프롬프트에 대해 응답 생성
+report_response = generate_response(client, "gpt-4o-mini", histories["report"])
+print_response("생성된 공격 탐지 보고서", report_response)
+
+histories["report"].append({"role": "assistant", "content": report_response})
+save_history(histories["report"], history_files["report"])
 
 
-    save_history(histories["report"], history_files["report"])
-
-
-       
+    
 
 
