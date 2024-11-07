@@ -45,12 +45,6 @@ def print_response(target_prompt, clean_answer):
     except json.JSONDecodeError:
         print(f"{target_prompt}:\n", clean_answer)
 
-# 히스토리 파일 저장 함수
-def save_history(history, filename):
-    with open(filename, "w", encoding="utf-8") as file:
-        for entry in history:
-            file.write(f"{entry['role']}: {entry['content']}\n")
-
 # 히스토리 관리 함수
 def manage_history(histories, key, max_length=10):
     if len(histories[key]) > max_length:
@@ -62,9 +56,11 @@ def manage_history(histories, key, max_length=10):
 histories = {name: [{"role": "system", "content": load_prompt(path)}] for name, path in prompt_files.items()}
 
 
-attack_time =  "2024년 09월 18일 07:20 KST"
-attack_type = "Exfiltration, Exfiltration Over Alternative Protocol" 
-user_json_logs = ''' '''
+attack_time =  "2024년 09월 21일 08:20 KST"
+attack_type = "Execution, Command and Scripting Interpreter" 
+user_json_logs = ''' 
+
+'''
 
 # 동적 값을 삽입하여 최종 프롬프트 구성
 prompt_text = histories["report"][0]['content']
