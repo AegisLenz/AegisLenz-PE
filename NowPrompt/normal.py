@@ -22,7 +22,7 @@ while True:
     # 사용자 질문 추가 (Classify 프롬프트에 대해 질문을 보냄)
 
     # Classify 프롬프트에 대해 응답 생성
-    classify_response = generate_response(client, "gpt-4o-mini", [histories["Classify"][0], {"role": "user", "content": question}])
+    classify_response = generate_response(client, "gpt-4o-mini", [histories["Classify"][0], {"role": "user", "content": query}])
 
     print(classify_response, "\n")  
 
