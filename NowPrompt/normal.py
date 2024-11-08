@@ -33,7 +33,7 @@ def save_history(history, filename):
         for entry in history:
             file.write(f"{entry['role']}: {entry['content']}\n")
 
-# 응답 생성 및 출력
+# 응답 생성 
 def generate_response(client, model, messages):
     response = client.chat.completions.create(
         model=model,
@@ -50,26 +50,19 @@ def print_response(target_prompt, clean_answer):
     except json.JSONDecodeError:
         print(f"{target_prompt}:\n", clean_answer)
 
-# 히스토리 파일 저장 함수
-def save_history(history, filename):
-    with open(filename, "w", encoding="utf-8") as file:
-        for entry in history:
-            file.write(f"{entry['role']}: {entry['content']}\n")
-
 # 히스토리 관리 함수
 def manage_history(histories, key, max_length=10):
     if len(histories[key]) > max_length:
-        # 오래된 항목 제거
         histories[key].pop(1)
 
 # detail 응답 생성
-def Detail_response(client, model, messages):
+def text_response(client, model, messages):
     response = client.chat.completions.create(
         model=model,
         messages=messages
     )
     return response.choices[0].message.content
-
+   
 
 # 프롬프트와 히스토리 초기화
 histories = {name: [{"role": "system", "content": load_prompt(path)}] for name, path in prompt_files.items()}
@@ -88,7 +81,6 @@ while True:
     print(classify_response, "\n")
     histories["Classify"].append({"role": "assistant", "content": classify_response})  
 
-
     # classify_response에서 분류 결과 추출
     classify_data = json.loads(classify_response)
 
@@ -96,55 +88,53 @@ while True:
     classification_result = classify_data.get("topics")  # 'topics'가 단일 값으로 가정
     
     # 분류 결과에 따른 프롬프트 설정
-    if classification_result == "ES":
-        target_prompt = "ES"
-    elif classification_result == "DB":
-        target_prompt = "DB"
-    elif classification_result == "Policy":
-        target_prompt = "Policy"
-    else:
-        target_prompt = "None"  # 기본값
 
-    # 각 프롬프트에 사용자 질문 추가 및 응답 생성
-    histories[target_prompt].append({"role": "user", "content": query})
-
-    clean_answer = generate_response(client, "gpt-4o-mini", histories[target_prompt])
-
-    # ES와 DB 응답을 저장하고 Detail 프롬프트 호출 추가
-    if target_prompt == "ES":
-        ES_response = clean_answer
-        # Detail 프롬프트에도 저장
-        histories["Detail"].append({"role": "user", "content": f"{query}\nES 응답: {ES_response}"})
-
-    elif target_prompt == "DB":
-        DB_response = clean_answer
-        # Detail 프롬프트에도 저장
-        histories["Detail"].append({"role": "user", "content": f"{query}\nDB 응답: {DB_response}"})
-
-    # 응답 출력 (target 프롬프트)
-    print_response(target_prompt, clean_answer)
-
-    # 히스토리 관리 (최대 10개 유지)
-    manage_history(histories, target_prompt)
-
-    histories[target_prompt].append({"role": "assistant", "content": clean_answer})
-    
     # Detail 프롬프트 호출 및 응답 생성
-    if target_prompt in ["ES", "DB"]:
-        
-        #응답 생성
-        detail_response = Detail_response(client, "gpt-4o-mini" , histories["Detail"])
-        # 응답 출력
-        print_response("Detail", detail_response)
+    if classification_result in ["ES", "DB"]:
+        target_prompt = classification_result
 
-        
-        # 히스토리 관리 (최대 10개 유지) - Detail
-        manage_history(histories, "Detail")
+        # 각 프롬프트에 사용자 질문 추가 및 응답 생성
+        histories[target_prompt].append({"role": "user", "content": query})
+        clean_answer = generate_response(client, "gpt-4o-mini", histories[target_prompt])
 
-        histories["Detail"].append({"role": "assistant", "content": detail_response})  
+        # 응답 출력 (target 프롬프트)
+        print_response(target_prompt, clean_answer)
+        manage_history(histories, target_prompt)
+
+        histories[target_prompt].append({"role": "assistant", "content": clean_answer})
+
+        if target_prompt in ["ES", "DB"]:
+            # Detail 프롬프트에도 저장
+            histories["Detail"].append({"role": "user", "content": f"{query}\n{target_prompt} 응답: {clean_answer}"})
+        
+            #응답 생성
+            detail_response = text_response(client, "gpt-4o-mini" , histories["Detail"])
+            # 응답 출력
+            print_response("Detail", detail_response)
+
+            # 히스토리 관리 (최대 10개 유지) - Detail
+            manage_history(histories, "Detail")
+
+            histories["Detail"].append({"role": "assistant", "content": detail_response})
+    elif classification_result == "Normal": # 3개의 주제에 해당하지 않는 질문
+        normal_response = text_response(client, "gpt-4o-mini", [{"role": "user", "content": question}])
+        print(normal_response) 
+        continue
+
+    elif target_prompt == "Policy":
+        target_prompt = classification_result
+        histories[target_prompt].append({"role": "user", "content": question})
+        policy_answer = text_response(client, "gpt-4o-mini", histories[target_prompt]) 
+
+        # 응답 출력 (target 프롬프트)
+        print_response(target_prompt, policy_answer)
+
+        # 히스토리 관리 (최대 10개 유지)
+        manage_history(histories, target_prompt)
+
+        histories[target_prompt].append({"role": "assistant", "content": policy_answer}) 
 
     # 히스토리 저장
     save_history(histories[target_prompt], history_files[target_prompt])
     save_history(histories["Detail"], history_files["Detail"])
     save_history(histories["Classify"], history_files["Classify"])
-
