@@ -15,6 +15,15 @@ prompt_files = {
     "Policy": os.path.join(engineering_dir, 'policy.txt')
 }
 
+# 추천 질문 생성
+def generate_response_recom(client, model, messages):
+    response = client.chat.completions.create(
+        model=model,
+        messages=messages,
+        presence_penalty=1.5
+    )
+    return response.choices[0].message.content
+
 # 프롬프트 파일 읽기
 def load_prompt(file_path):
     with open(file_path, "r", encoding="utf-8") as file:
