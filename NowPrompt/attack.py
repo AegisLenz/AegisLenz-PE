@@ -3,63 +3,14 @@ import os
 import json
 from dotenv import load_dotenv
 from openai import OpenAI
+from function import prompt_files, load_prompt, save_history, generate_response, print_response, manage_history, text_response, generate_response_recom
 
 # 환경 변수 로드 및 API 클라이언트 설정
 load_dotenv()
 api_key = os.getenv("OPEN_AI_SECRET_KEY")
 client = OpenAI(api_key=api_key)
 
-# 현재 스크립트 위치 기준으로 상대 경로 설정
-current_dir = os.path.dirname(os.path.abspath(__file__))
-engineering_dir = os.path.join(current_dir, 'Engineering')
-
-# 파일 경로와 이름 정의
-prompt_files = {
-    "Classify": os.path.join(engineering_dir, 'ClassifyPr.txt'),
-    "ES": os.path.join(engineering_dir, 'onlyES.txt'),
-    "DB": os.path.join(engineering_dir, 'onlyMDB.txt'),
-    "Detail": os.path.join(engineering_dir, 'DetailPr.txt'),
-    "Policy": os.path.join(engineering_dir, 'policy.txt'),
-    "recom": os.path.join(engineering_dir, 'recomm.txt')
-}
 history_files = {name: f"history_{name}.txt" for name in prompt_files}
-
-# 프롬프트 파일 읽기
-def load_prompt(file_path):
-    with open(file_path, "r", encoding="utf-8") as file:
-        return file.read()
-
-# 히스토리 파일 저장
-def save_history(history, filename):
-    with open(filename, "w", encoding="utf-8") as file:
-        for entry in history:
-            file.write(f"{entry['role']}: {entry['content']}\n")
-
-# 추천 질문 생성
-def generate_response_recom(client, model, messages):
-    response = client.chat.completions.create(
-        model=model,
-        messages=messages,
-        presence_penalty=1.5
-    )
-    return response.choices[0].message.content
-
-# 응답 생성 
-def generate_response(client, model, messages):
-    response = client.chat.completions.create(
-        model=model,
-        messages=messages,
-        response_format={"type": "json_object"}
-    )
-    return response.choices[0].message.content
-
-# 응답 출력
-def print_response(target_prompt, clean_answer):
-    try:
-        response_json = json.loads(clean_answer)
-        print(f"{target_prompt}:\n", json.dumps(response_json, indent=4, ensure_ascii=False))
-    except json.JSONDecodeError:
-        print(f"{target_prompt}:\n", clean_answer)
 
 # 추천 질문 생성 함수 (중복 방지, 한 번에 세개씩)
 def generate_follow_up_question(client, prompt, previous_questions):
@@ -85,19 +36,6 @@ def generate_follow_up_question(client, prompt, previous_questions):
             # 중복되지 않는 질문을 previous_questions에 누적하여 저장하고, 하나의 문자열로 조합해서 반환
             previous_questions.extend(unique_questions[:3])
             return '\n'.join([f'{question}' for question in unique_questions[:3]])
-
-# 히스토리 관리 함수
-def manage_history(histories, key, max_length=10):
-    if len(histories[key]) > max_length:
-        histories[key].pop(1)
-
-# detail 응답 생성
-def text_response(client, model, messages):
-    response = client.chat.completions.create(
-        model=model,
-        messages=messages
-    )
-    return response.choices[0].message.content
 
 # 프롬프트와 히스토리 초기화
 histories = {name: [{"role": "system", "content": load_prompt(path)}] for name, path in prompt_files.items()}
