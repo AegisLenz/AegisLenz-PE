@@ -12,7 +12,10 @@
 - Engineering/DetailPr.txt : 설명만 json 반환 PE
 - Engineering/onlyES.txt : ES 쿼리만 json 반환 PE
 - Engineering/onlyMDB.txt : MongoDB 쿼리만 json 반환 PE
-- Engineering/policy.txt : 정책관련 질의 처리 json 반환 PE
-- asyncapi.py : 비동기 처리 코드
-- testapi.py : 프롬프트 로직 구현 코드
+- Engineering/policy.txt : 정책관련 질의 처리 텍스트 반환 PE
+- Engineering/recomm.txt : 추천 질문 처리 텍스트 반환 (큰따옴표로 세개 질의 구분) PE 
+- Engineering/reportPr.txt : 공격 보고서 작성 markdown 형식 반환 PE
+- attack.py : 공격 탐지 시, 질문 생성 + 그 뒤 로직 코드
+- normal.py : 일반적인 상황에서 질의하는 로직 코드
+- reporttest.py : 공격 보고서 작성 코드
 
