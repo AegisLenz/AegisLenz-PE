@@ -12,7 +12,9 @@ prompt_files = {
     "ES": os.path.join(engineering_dir, 'onlyES.txt'),
     "DB": os.path.join(engineering_dir, 'onlyMDB.txt'),
     "Detail": os.path.join(engineering_dir, 'DetailPr.txt'),
-    "Policy": os.path.join(engineering_dir, 'policy.txt')
+    "Policy": os.path.join(engineering_dir, 'policy.txt'),
+    "report":os.path.join(engineering_dir, 'reportPr.txt'),
+    "recom": os.path.join(engineering_dir, 'recomm.txt')
 }
 
 # 추천 질문 생성
