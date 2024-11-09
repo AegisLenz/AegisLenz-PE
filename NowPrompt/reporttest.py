@@ -32,7 +32,7 @@ report_prompt = prompt_text.format(
 histories["report"].append({"role": "user", "content": report_prompt})
 
 # Classify 프롬프트에 대해 응답 생성
-report_response = generate_response(client, "gpt-4o-mini", histories["report"])
+report_response = text_response(client, "gpt-4o-mini", histories["report"])
 print_response("생성된 공격 탐지 보고서", report_response)
 
 histories["report"].append({"role": "assistant", "content": report_response})
