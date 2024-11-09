@@ -25,6 +25,7 @@ def generate_response_recom(client, model, messages):
         presence_penalty=1.5
     )
     return response.choices[0].message.content
+
 def load_json(file_path):
     try:
         with open(file_path, 'r', encoding='utf-8') as file:
