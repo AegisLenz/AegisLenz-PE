@@ -1,3 +1,4 @@
 .env
 FirstPT/
 Backup/
+__pycache__/
