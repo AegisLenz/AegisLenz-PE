@@ -51,8 +51,11 @@ while True:
     elif classification_result == "Policy":
         policy = {}
        #original_policy = policy.get("original_policy")
-        original_policy = load_json("./sample_data/Existing_policy.json")
-        least_privilege_policy = load_json("./sample_data/Changed_policy.json")
+        basedir = os.path.dirname(os.path.abspath(__file__)) 
+        existing_policy_path = os.path.join(basedir, 'sample_data', 'Existing_policy.json')
+        changed_policy_path = os.path.join(basedir, 'sample_data', 'Changed_policy.json')
+        original_policy = load_json(existing_policy_path)
+        least_privilege_policy = load_json(changed_policy_path)
        #least_privilege_policy = policy.get("least_privilege_policy")
         prompt = []
         policy_prompt_content = prompt_txt["Policy"]["content"].format(
