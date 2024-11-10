@@ -30,6 +30,14 @@ def generate_response_recom(client, model, messages):
     )
     return response.choices[0].message.content
 
+def load_json(file_path):
+    try:
+        with open(file_path, 'r', encoding='utf-8') as file:
+            return json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError) as e:
+        print(f"Error: {e}")
+        return None
+    
 # 프롬프트 파일 읽기
 def load_prompt(file_path):
     with open(file_path, "r", encoding="utf-8") as file:
