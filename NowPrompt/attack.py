@@ -4,14 +4,12 @@ import json
 from dotenv import load_dotenv
 from openai import OpenAI
 from datetime import datetime
-from function import load_and_fill, prompt_files, load_prompt, save_history, generate_response, print_response, manage_history, text_response, generate_response_recom
+from function import load_and_fill, prompt_files, load_prompt, save_history, generate_response, print_response, manage_history, text_response, generate_response_recom, load_json
 
 # 환경 변수 로드 및 API 클라이언트 설정
 load_dotenv()
 api_key = os.getenv("OPEN_AI_SECRET_KEY")
 client = OpenAI(api_key=api_key)
-
-history_files = {name: f"history_{name}.txt" for name in prompt_files}
 
 # 현재 날짜와 시간을 문자열로 가져오기
 current_datetime = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -41,8 +39,12 @@ def generate_follow_up_question(client, prompt, previous_questions):
             previous_questions.extend(unique_questions[:3])
             return '\n'.join([f'{question}' for question in unique_questions[:3]])
 
-# 프롬프트와 히스토리 초기화
+
+# recom용
+history_files = {name: f"history_{name}.txt" for name in prompt_files}
 histories = {name: [{"role": "system", "content": load_prompt(path)}] for name, path in prompt_files.items()}
+
+prompt_txt = {name: {"role": "system", "content": load_prompt(path)} for name, path in prompt_files.items()}
 
 Tatic = "Execution"
 base_query = f"AI 질의 : AWS 환경에서 발생한 공격이 MITRE ATTACK Tatic 중 {Tatic}일 때, 보안 관리자가 어떤 질문을 해야 하는지 추천 질문 만들어줘 "
@@ -52,9 +54,9 @@ previous_questions = []
 
 # 변수 대입
 histories["recom"] = [{"role": "system", "content": load_and_fill(prompt_files["recom"], prompt_files["recomVB"])}]
-histories["DB"] = [{"role": "system", "content": load_and_fill(prompt_files["DB"], prompt_files["dbVB"])}]
+prompt_txt["DB"] = {"role": "system", "content": load_and_fill(prompt_files["DB"], prompt_files["dbVB"])}
 
-
+# 대화 진행 루프
 
 while True:
     
@@ -64,82 +66,75 @@ while True:
 
     print(f"추천 질문 3가지 : {follow_up_question} ")
 
-    user_input = input("\n 3가지 질문 중 하나를 선택하세요. : ")
+    question = input("\n 3가지 질문 중 하나를 선택하세요. : ")
 
     # 선택한 질문 넣어주기
-    user_query = f"현재 날짜와 시간은 {current_datetime}입니다. 이 시간에 맞춰서 작업을 진행해주세요. 사용자의 자연어 질문: {user_input} 답변은 반드시 json 형식으로 나옵니다."
+    query = f"현재 날짜와 시간은 {current_datetime}입니다. 이 시간에 맞춰서 작업을 진행해주세요. 사용자의 자연어 질문: {question} 답변은 반드시 json 형식으로 나옵니다."
 
-    # 사용자 질문 추가 (Classify 프롬프트에 대해 질문을 보냄)
-    histories["Classify"].append({"role": "user", "content": user_query})
-    histories["recom"].append({"role": "user", "content": user_query})
+    histories["recom"].append({"role": "user", "content": query})
 
     # Classify 프롬프트에 대해 응답 생성
-    classify_response = generate_response(client, "gpt-4o-mini", histories["Classify"])
+    classify_response = generate_response(client, "gpt-4o-mini", [prompt_txt["Classify"], {"role": "user", "content": query}])
 
     print(classify_response, "\n")
-    histories["Classify"].append({"role": "assistant", "content": classify_response})  
 
     # classify_response에서 분류 결과 추출
     classify_data = json.loads(classify_response)
 
     # 'topics' 키의 값을 직접 가져와 확인
-    classification_result = classify_data.get("topics")  # 'topics'가 단일 값으로 가정
+    classification_result = classify_data.get("topics")  # 'topics'가 단일 값
     
     # 분류 결과에 따른 프롬프트 설정
 
     # Detail 프롬프트 호출 및 응답 생성
     if classification_result in ["ES", "DB"]:
         
-        target_prompt = classification_result
         # 각 프롬프트에 사용자 질문 추가 및 응답 생성
-        histories[target_prompt].append({"role": "user", "content": user_query})
-        clean_answer = generate_response(client, "gpt-4o-mini", histories[target_prompt])
+        prompt = []
+        prompt.append(prompt_txt[classification_result])
+        prompt.append({"role": "user", "content": query})
+        clean_answer = generate_response(client, "gpt-4o-mini", prompt)
 
-        # 응답 출력 (target 프롬프트)
-        print_response(target_prompt, clean_answer)
-        manage_history(histories, target_prompt)
-        histories[target_prompt].append({"role": "assistant", "content": clean_answer})
+        # json 응답 출력 (target 프롬프트)
+        print_response(classification_result, clean_answer)
 
-        if target_prompt in ["ES", "DB"]:
-            histories["Detail"].append({"role": "user", "content": f"{user_query}\n{target_prompt} 응답: {clean_answer}"})
-            #응답 생성
-            detail_response = text_response(client, "gpt-4o-mini" , histories["Detail"])
-            # 응답 출력
-            print_response("Detail", detail_response)
+        prompt = []
+        prompt.append(prompt_txt["Detail"])
+        prompt.append({"role": "user", "content":  f"{query}\n{classification_result} 응답: {clean_answer}"})
 
-            # 히스토리 관리 (최대 10개 유지) - Detail
-            manage_history(histories, "Detail")
+        #설명 응답 생성
+        detail_response = text_response(client, "gpt-4o-mini" , prompt)
+        print_response("Detail", detail_response)
 
-            histories["Detail"].append({"role": "assistant", "content": detail_response})
-            histories["recom"].append({"role": "assistant", "content": f"응답:{detail_response}"})
+        histories["recom"].append({"role": "assistant", "content": f"응답:{detail_response}"})
     
     elif classification_result == "Normal": # 3개의 주제에 해당하지 않는 질문
-        normal_response = text_response(client, "gpt-4o-mini", [{"role": "user", "content": user_input}])
+        normal_response = text_response(client, "gpt-4o-mini", [{"role": "user", "content": question}])
         histories["recom"].append({"role": "assistant", "content": f"응답:{normal_response}"})
         print(normal_response) 
         continue        
 
     elif classification_result == "Policy":
+        policy = {}
+       #original_policy = policy.get("original_policy")
+        original_policy = load_json(prompt_files["ExistingPolicy"])
+        least_privilege_policy = load_json(prompt_files["ChangedPolicy"])
+
+       #least_privilege_policy = policy.get("least_privilege_policy")
+        prompt = []
+        policy_prompt_content = prompt_txt["Policy"]["content"].format(
+            original_policy=json.dumps(original_policy, indent=2), 
+            least_privilege_policy=json.dumps(least_privilege_policy, indent=2)
+        )
+        prompt.append({"role": "system", "content": policy_prompt_content})
+        prompt.append({"role": "user", "content": question})
+        policy_answer = text_response(client, "gpt-4o-mini", prompt)
+        print(policy_answer)
         
-        target_prompt = classification_result
-        histories[target_prompt].append({"role": "user", "content": user_input})
-        policy_answer = text_response(client, "gpt-4o-mini", histories[target_prompt]) 
-
-        # 응답 출력 (target 프롬프트)
-        print_response(target_prompt, policy_answer)
-        manage_history(histories, target_prompt)
-
-        histories[target_prompt].append({"role": "assistant", "content": policy_answer})
         histories["recom"].append({"role": "assistant", "content": policy_answer})
 
     append_recom = "위 사용자 질의와 응답을 참고해서 다시 추천 질문 세개를 만들어줘"
     histories["recom"].append({"role": "assistant", "content": append_recom})
-
-
-    # 히스토리 저장
-    save_history(histories[target_prompt], history_files[target_prompt])
-    save_history(histories["Detail"], history_files["Detail"])
-    save_history(histories["Classify"], history_files["Classify"])
     save_history(histories["recom"], history_files["recom"])
 
             
