@@ -5,7 +5,7 @@ import json
 current_dir = os.path.dirname(os.path.abspath(__file__))
 engineering_dir = os.path.join(current_dir, 'Engineering')
 variable_dir = os.path.join(current_dir, 'Variable')
-
+sample_data_dir = os.path.join(current_dir, 'sample_data')
 
 # 파일 경로와 이름 정의
 prompt_files = {
@@ -18,7 +18,9 @@ prompt_files = {
     "recom": os.path.join(engineering_dir, 'recomm.txt'),
     "reportVB" : os.path.join(variable_dir, 'report.txt'),
     "recomVB" : os.path.join(variable_dir, 'recom.txt'),
-    "dbVB" : os.path.join(variable_dir, 'MDB.txt')
+    "dbVB" : os.path.join(variable_dir, 'MDB.txt'),
+    "ExistingPolicy": os.path.join(sample_data_dir, 'Existing_policy.json'),
+    "ChangedPolicy": os.path.join(sample_data_dir, 'Changed_policy.json')
 }
 
 # 추천 질문 생성

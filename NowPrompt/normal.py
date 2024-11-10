@@ -19,8 +19,7 @@ window = []
 prompt_txt = {name: {"role": "system", "content": load_prompt(path)} for name, path in prompt_files.items()}
 
 # 변수 대입
-prompt_txt["DB"] = [{"role": "system", "content": load_and_fill(prompt_files["DB"], prompt_files["dbVB"])}]
-
+prompt_txt["DB"] = {"role": "system", "content": load_and_fill(prompt_files["DB"], prompt_files["dbVB"])}
 
 # 대화 진행 루프
 while True:
@@ -59,10 +58,12 @@ while True:
         print(normal_response) 
 
     elif classification_result == "Policy":
+        
         policy = {}
        #original_policy = policy.get("original_policy")
-        original_policy = load_json("./sample_data/Existing_policy.json")
-        least_privilege_policy = load_json("./sample_data/Changed_policy.json")
+        original_policy = load_json(prompt_files["ExistingPolicy"])
+        least_privilege_policy = load_json(prompt_files["ChangedPolicy"])
+
        #least_privilege_policy = policy.get("least_privilege_policy")
         prompt = []
         policy_prompt_content = prompt_txt["Policy"]["content"].format(
