@@ -1,3 +1,5 @@
 .env
 FirstPT/
 Backup/
+_pycache_/
+hidden_Variable/
