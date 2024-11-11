@@ -93,9 +93,7 @@ while True:
         prompt.append(prompt_txt[classification_result])
         prompt.append({"role": "user", "content": query})
         
-        if classification_result == "DB" :
-            clean_answer = text_response(client, "gpt-4o-mini", prompt)
-        else : clean_answer = generate_response(client, "gpt-4o-mini", prompt)
+        clean_answer = generate_response(client, "gpt-4o-mini", prompt)
 
         # json 응답 출력 (target 프롬프트)
         print_response(classification_result, clean_answer)
@@ -112,7 +110,7 @@ while True:
     
     elif classification_result == "Normal": # 3개의 주제에 해당하지 않는 질문
         normal_response = text_response(client, "gpt-4o-mini", [{"role": "user", "content": question}])
-        #histories["recom"].append({"role": "assistant", "content": f"응답:{normal_response}"})
+        histories["recom"].append({"role": "assistant", "content": f"응답:{normal_response}"})
         print(normal_response) 
         continue        
 
@@ -135,9 +133,9 @@ while True:
         policy_answer = text_response(client, "gpt-4o-mini", prompt)
         print(policy_answer)
         
-        #histories["recom"].append({"role": "assistant", "content": policy_answer})
+        histories["recom"].append({"role": "assistant", "content": policy_answer})
 
-    append_recom = "위 사용자가 선택한 질의를 참고해서 다시 추천 질문 세개를 만들어주세요."
+    append_recom = "위 사용자가 선택한 질의를 참고해서 다시 추천 질문 세개를 만들어주세요. 이전과 중복되지 않는 세 줄 질문을 생성해 주세요."
     histories["recom"].append({"role": "assistant", "content": append_recom})
     save_history(histories["recom"], history_files["recom"])
 
