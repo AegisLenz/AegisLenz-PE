@@ -36,11 +36,16 @@ while True:
 
     # Detail 프롬프트 호출 및 응답 생성
     if classification_result in ["ES", "DB"]:
+
         # 각 프롬프트에 사용자 질문 추가 및 응답 생성
         prompt = []
         prompt.append(prompt_txt[classification_result])
         prompt.append({"role": "user", "content": query})
-        clean_answer = generate_response(client, "gpt-4o-mini", prompt)
+        
+        if classification_result == "DB" :
+            clean_answer = text_response(client, "gpt-4o-mini", prompt)
+        else : clean_answer = generate_response(client, "gpt-4o-mini", prompt)
+        
 
         # json 응답 출력 (target 프롬프트)
         print_response(classification_result, clean_answer)

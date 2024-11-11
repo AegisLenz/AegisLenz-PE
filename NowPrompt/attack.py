@@ -47,7 +47,7 @@ histories = {name: [{"role": "system", "content": load_prompt(path)}] for name, 
 prompt_txt = {name: {"role": "system", "content": load_prompt(path)} for name, path in prompt_files.items()}
 
 Tatic = "Execution"
-base_query = f"AI 질의 : AWS 환경에서 발생한 공격이 MITRE ATTACK Tatic 중 {Tatic}일 때, 보안 관리자가 어떤 질문을 해야 하는지 추천 질문 만들어줘 "
+base_query = f"AI 질의 : AWS 환경에서 발생한 공격이 MITRE ATTACK Tatic 중 {Tatic}일 때, 보안 관리자가 어떤 질문을 해야 하는지 추천 질문 만들어주세요. "
 
 # 이전에 생성된 모든 질문을 누적할 리스트 초기화
 previous_questions = []
@@ -73,7 +73,7 @@ while True:
     histories["recom"].append({"role": "user", "content": query})
 
     # Classify 프롬프트에 대해 응답 생성
-    classify_response = generate_response(client, "gpt-4o-mini", [prompt_txt["Classify"], {"role": "user", "content": query}])
+    classify_response = generate_response(client, "gpt-4o-mini", [prompt_txt["Classify"], {"role": "user", "content": question}])
 
     print(classify_response, "\n")
 
@@ -92,7 +92,10 @@ while True:
         prompt = []
         prompt.append(prompt_txt[classification_result])
         prompt.append({"role": "user", "content": query})
-        clean_answer = generate_response(client, "gpt-4o-mini", prompt)
+        
+        if classification_result == "DB" :
+            clean_answer = text_response(client, "gpt-4o-mini", prompt)
+        else : clean_answer = generate_response(client, "gpt-4o-mini", prompt)
 
         # json 응답 출력 (target 프롬프트)
         print_response(classification_result, clean_answer)
@@ -105,11 +108,11 @@ while True:
         detail_response = text_response(client, "gpt-4o-mini" , prompt)
         print_response("Detail", detail_response)
 
-        histories["recom"].append({"role": "assistant", "content": f"응답:{detail_response}"})
+        #histories["recom"].append({"role": "assistant", "content": f"응답:{detail_response}"})
     
     elif classification_result == "Normal": # 3개의 주제에 해당하지 않는 질문
         normal_response = text_response(client, "gpt-4o-mini", [{"role": "user", "content": question}])
-        histories["recom"].append({"role": "assistant", "content": f"응답:{normal_response}"})
+        #histories["recom"].append({"role": "assistant", "content": f"응답:{normal_response}"})
         print(normal_response) 
         continue        
 
@@ -132,9 +135,9 @@ while True:
         policy_answer = text_response(client, "gpt-4o-mini", prompt)
         print(policy_answer)
         
-        histories["recom"].append({"role": "assistant", "content": policy_answer})
+        #histories["recom"].append({"role": "assistant", "content": policy_answer})
 
-    append_recom = "위 사용자 질의와 응답을 참고해서 다시 추천 질문 세개를 만들어줘"
+    append_recom = "위 사용자가 선택한 질의를 참고해서 다시 추천 질문 세개를 만들어주세요."
     histories["recom"].append({"role": "assistant", "content": append_recom})
     save_history(histories["recom"], history_files["recom"])
 
