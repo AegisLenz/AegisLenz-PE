@@ -19,7 +19,7 @@ window = []
 prompt_txt = {name: {"role": "system", "content": load_prompt(path)} for name, path in prompt_files.items()}
 
 # 변수 대입
-prompt_txt["DB"] = {"role": "system", "content": load_and_fill(prompt_files["DB"], prompt_files["dbVB"])}
+#prompt_txt["DB"] = {"role": "system", "content": load_and_fill(prompt_files["DB"], prompt_files["dbVB"])}
 
 # 대화 진행 루프
 while True:
@@ -65,13 +65,13 @@ while True:
     elif classification_result == "Policy":
         
         policy = {}
-        
+
         basedir = os.path.dirname(os.path.abspath(__file__)) 
         existing_policy_path = os.path.join(basedir, 'sample_data', 'Existing_policy.json')
         changed_policy_path = os.path.join(basedir, 'sample_data', 'Changed_policy.json')
         original_policy = load_json(existing_policy_path)
         least_privilege_policy = load_json(changed_policy_path)
-
+       
         prompt = []
         policy_prompt_content = prompt_txt["Policy"]["content"].format(
             original_policy=json.dumps(original_policy, indent=2), 
