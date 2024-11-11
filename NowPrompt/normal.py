@@ -41,10 +41,8 @@ while True:
         prompt = []
         prompt.append(prompt_txt[classification_result])
         prompt.append({"role": "user", "content": query})
-        
-        if classification_result == "DB" :
-            clean_answer = text_response(client, "gpt-4o-mini", prompt)
-        else : clean_answer = generate_response(client, "gpt-4o-mini", prompt)
+
+        clean_answer = generate_response(client, "gpt-4o-mini", prompt)
         
 
         # json 응답 출력 (target 프롬프트)
