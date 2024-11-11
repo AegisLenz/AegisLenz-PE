@@ -57,7 +57,6 @@ histories["recom"] = [{"role": "system", "content": load_and_fill(prompt_files["
 prompt_txt["DB"] = {"role": "system", "content": load_and_fill(prompt_files["DB"], prompt_files["dbVB"])}
 
 # 대화 진행 루프
-
 while True:
     
     follow_up_question = generate_follow_up_question(client, base_query, previous_questions)
