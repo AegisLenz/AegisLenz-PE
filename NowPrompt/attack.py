@@ -68,9 +68,9 @@ while True:
     question = input("\n 3가지 질문 중 하나를 선택하세요. : ")
 
     # 선택한 질문 넣어주기
-    query = f"현재 날짜와 시간은 {current_datetime}입니다. 이 시간에 맞춰서 작업을 진행해주세요. 사용자의 자연어 질문: {question} 답변은 반드시 json 형식으로 나옵니다."
+    query = f"현재 날짜와 시간은 {current_datetime}입니다. 이 시간에 맞춰서 작업을 진행해주세요. 사용자 자연어 질문: {question} 답변은 반드시 json 형식으로 나옵니다."
 
-    histories["recom"].append({"role": "user", "content": query})
+    histories["recom"].append({"role": "user", "content": f"사용자가 선택한 자연어 질문: {question}"})
 
     # Classify 프롬프트에 대해 응답 생성
     classify_response = generate_response(client, "gpt-4o-mini", [prompt_txt["Classify"], {"role": "user", "content": question}])
@@ -135,7 +135,7 @@ while True:
         
         histories["recom"].append({"role": "assistant", "content": policy_answer})
 
-    append_recom = "위 사용자가 선택한 질의를 참고해서 다시 추천 질문 세개를 만들어주세요. 이전과 중복되지 않는 세 줄 질문을 생성해 주세요."
+    append_recom = "위 사용자가 선택한 질의와 응답을 참고해서 다시 추천 질문 세개를 만들어주세요. 이전과 절대 중복되지 않는 세 줄 질문을 생성해 주세요."
     histories["recom"].append({"role": "assistant", "content": append_recom})
     save_history(histories["recom"], history_files["recom"])
 

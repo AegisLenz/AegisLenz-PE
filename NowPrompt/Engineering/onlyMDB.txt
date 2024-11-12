@@ -3,7 +3,169 @@
 변환된 쿼리는 MongoDB 검색에 사용될 것이고 검색된 결과를 사용자에게 제공할 것입니다.
 
 임베디드 Document Schema는 아래와 같습니다. 이를 참조하여 mongodb를 조회하는 쿼리를 생성해야합니다.
-{schema}
+    {
+    "_id": "ObjectId",
+    "asset": {
+        "IAM": [
+        {
+            "UserName": "string",
+            "UserId": "string",
+            "CreateDate": "ISODate",
+            "UserPolicies": ["string"],
+            "AttachedPolicies": [
+            {
+                "PolicyName": "string",
+                "PolicyDocument": {
+                "Version": "string",
+                "Statement": [
+                    {
+                    "Sid": "string",
+                    "Effect": "string",
+                    "Action": ["string"],
+                    "Resource": ["string"],
+                    "Condition": "object"
+                    }
+                ]
+                }
+            }
+            ],
+            "Groups": ["string"],
+            "PasswordLastUsed": "ISODate",
+            "AccessKeysLastUsed": [
+            {
+                "AccessKeyId": "string",
+                "Status": "string",
+                "LastUsedDate": "ISODate"
+            }
+            ],
+            "LastUpdated": "ISODate"
+        }
+        ],
+        "EC2": [
+        {
+            "InstanceId": "string",
+            "InstanceType": "string",
+            "LaunchTime": "ISODate",
+            "State": "string",
+            "PublicIpAddress": "string",
+            "PrivateIpAddress": "string",
+            "VpcId": "string",
+            "SubnetId": "string",
+            "SecurityGroups": [
+            {
+                "GroupId": "string",
+                "GroupName": "string"
+            }
+            ],
+            "Tags": [
+            {
+                "Key": "string",
+                "Value": "string"
+            }
+            ],
+            "EbsVolumes": [
+            {
+                "VolumeId": "string",
+                "Iops": "int",
+                "VolumeType": "string",
+                "MultiAttachEnabled": "boolean",
+                "Throughput": "int",
+                "Size": "int",
+                "SnapshotId": "string",
+                "AvailabilityZone": "string",
+                "State": "string",
+                "CreateTime": "ISODate",
+                "Attachments": ["object"],
+                "Encrypted": "boolean"
+            }
+            ],
+            "NetworkInterfaces": [
+            {
+                "Association": "object",
+                "Attachment": "object",
+                "Description": "string",
+                "Groups": [
+                {
+                    "GroupId": "string",
+                    "GroupName": "string"
+                }
+                ],
+                "Ipv6Addresses": ["string"],
+                "MacAddress": "string",
+                "NetworkInterfaceId": "string",
+                "OwnerId": "string",
+                "PrivateDnsName": "string",
+                "PrivateIpAddress": "string",
+                "PrivateIpAddresses": [
+                {
+                    "Association": "object",
+                    "Primary": "boolean",
+                    "PrivateDnsName": "string",
+                    "PrivateIpAddress": "string"
+                }
+                ],
+                "SourceDestCheck": "boolean",
+                "Status": "string",
+                "SubnetId": "string",
+                "VpcId": "string",
+                "InterfaceType": "string"
+            }
+            ],
+            "IamInstanceProfile": {
+            "Arn": "string",
+            "Id": "string"
+            }
+        }
+        ],
+        "S3": [
+        {
+            "Name": "string",
+            "CreationDate": "ISODate",
+            "Location": "string",
+            "ACL": [
+            {
+                "Grantee": {
+                "DisplayName": "string",
+                "ID": "string",
+                "Type": "string"
+                },
+                "Permission": "string"
+            }
+            ],
+            "Policy": {
+                "Version": "string",
+                "Statement": [
+                    {
+                    "Sid": "string",
+                    "Effect": "string",
+                    "Principal": "object",
+                    "Action": ["string"],
+                    "Resource": ["string"],
+                    "Condition": "object"
+                    }
+                ]
+            },
+            "Logging": {
+                "TargetBucket": "string",
+                "TargetPrefix": "string",
+                "TargetObjectKeyFormat": {
+                    "PartitionedPrefix": {
+                    "PartitionDateSource": "string"
+                }
+            }
+            },
+            "Versioning": "string",
+            "Tags": [
+            {
+                "Key": "string",
+                "Value": "string"
+            }
+            ]
+        }
+        ]
+    },
+    "user_id": "string"
+    }
 
 임베디드 Document Schema 설명은 다음과 같습니다
 1. IAM 사용자 데이터에는 사용자 이름(UserName), 사용자 ID(UserId), 생성일(CreateDate), 사용자 정책(UserPolicies), 연결된 정책(AttachedPolicies), 그룹(Groups), 비밀번호 마지막 사용 시점(PasswordLastUsed) 즉 마지막으로 해당 IAM 유저가 접속한 시간, 액세스 키가 사용된 기록인 이전 시간들(AccessKeysLastUsed), 마지막 업데이트 시점(LastUpdated)과 같은 정보가 포함되어 있습니다. 
