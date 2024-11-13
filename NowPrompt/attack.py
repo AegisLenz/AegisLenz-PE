@@ -54,7 +54,7 @@ previous_questions = []
 
 # 변수 대입
 histories["recom"] = [{"role": "system", "content": load_and_fill(prompt_files["recom"], prompt_files["recomVB"])}]
-prompt_txt["DB"] = {"role": "system", "content": load_and_fill(prompt_files["DB"], prompt_files["dbVB"])}
+#prompt_txt["DB"] = {"role": "system", "content": load_and_fill(prompt_files["DB"], prompt_files["dbVB"])}
 
 # 대화 진행 루프
 while True:
