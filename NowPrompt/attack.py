@@ -135,8 +135,11 @@ while True:
         
         histories["recom"].append({"role": "assistant", "content": policy_answer})
 
-    append_recom = "위 사용자가 선택한 질의와 응답을 참고해서 다시 추천 질문 세개를 만들어주세요. 이전과 절대 중복되지 않는 세 줄 질문을 생성해 주세요."
+    append_recom = "위 사용자가 선택한 질의와 응답을 참고해서 다시 추천 질문 세개를 만들어주세요. 이전과 절대 중복되지 않는 **다양한 주제**로 세 줄 질문을 생성해 주세요."
     histories["recom"].append({"role": "assistant", "content": append_recom})
     save_history(histories["recom"], history_files["recom"])
+
+
+    
 
             
