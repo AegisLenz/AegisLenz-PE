@@ -10,10 +10,24 @@ api_key = os.getenv("OPEN_AI_SECRET_KEY")
 client = OpenAI(api_key=api_key)
 
 
-prompt_txt = {name: {"role": "system", "content": load_prompt(path)} for name, path in prompt_files.items()}
+# 템플릿 파일 로드
+template_content = load_prompt(prompt_files["report"])  # 파일 내용을 읽어옴
 
-# 템플릿과 변수를 채워 최종 보고서 생성
-prompt_txt["report"] = {"role": "system", "content": load_and_fill(prompt_files["report"], prompt_files["reportVB"])}
+First = input("\n수정: ")
+Second = input("\n수정: ")
+Third = input("\n수정: ")
+Fourth = input("\n수정: ")
+
+attack_time =  "2024년 09월 21일 08:20 KST"
+attack_type = "Execution, Command and Scripting Interpreter" 
+logs = """ 
+
+"""
+
+# 템플릿에서 직접 변수 치환
+template_content = template_content.format(**locals())
+
+prompt_txt = {"report": {"role": "system", "content": template_content}}
 
 # Classify 프롬프트에 대해 응답 생성
 report_response = text_response(client, "gpt-4o-mini", [prompt_txt["report"]])
