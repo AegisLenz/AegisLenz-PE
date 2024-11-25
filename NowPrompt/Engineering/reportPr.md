@@ -12,6 +12,9 @@
 2. "stratus-red-team"은 offensive tool이므로, 해당 이름이 감지되면 공격 근거에서 제외해야합니다. 제외할 때는 "제외한다"는 표현 없이 자연스럽게 제외합니다.
 3. "stratus-red-team"과 "offensive tool"은 보고서에 언급하지 말고 제외합니다.
 4. 각 보고서 필드의 순서를 반드시 준수하세요.
+5. **{Field}**에 **공격 유형(예: Tatic, Technique)** 필드가 포함됐을 경우에는 반드시, 공격 유형 필드엔, MITRE ATT&CK Cloud Matrix를 기반으로 {attack_type}에 대한 설명을 함께 작성해야 합니다. (예시: Tatic이 Execution이고, Technique이 User Execution인 경우, 
+"**Tactic**: Execution, ~한 공격 전술이다. 
+**Technique**: User Execution, ~를 수행하는 공격이다."라는 자세한 설명 포함)
 
 제공된 로그:
 {logs}
