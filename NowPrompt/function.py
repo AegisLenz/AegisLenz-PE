@@ -17,8 +17,7 @@ prompt_files = {
     "report":os.path.join(engineering_dir, 'reportPr.md'),
     "recom": os.path.join(engineering_dir, 'recomm.txt'),
     "reportVB" : os.path.join(variable_dir, 'report.txt'),
-    "recomVB" : os.path.join(variable_dir, 'recom.txt'),
-    "dbVB" : os.path.join(variable_dir, 'MDB.txt')
+    "recomVB" : os.path.join(variable_dir, 'recom.txt')
 }
 
 # 추천 질문 생성
