@@ -9,7 +9,6 @@ load_dotenv()
 api_key = os.getenv("OPEN_AI_SECRET_KEY")
 client = OpenAI(api_key=api_key)
 
-
 prompt_txt = {name: {"role": "system", "content": load_prompt(path)} for name, path in prompt_files.items()}
 
 # 템플릿과 변수를 채워 최종 보고서 생성
@@ -18,10 +17,5 @@ prompt_txt["report"] = {"role": "system", "content": load_and_fill(prompt_files[
 # Classify 프롬프트에 대해 응답 생성
 report_response = text_response(client, "gpt-4o-mini", [prompt_txt["report"]])
 print_response("생성된 공격 탐지 보고서", report_response)
-
-
-
-
-    
 
 
