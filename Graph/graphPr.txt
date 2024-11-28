@@ -1,0 +1,34 @@
+제공된 로그에 기반하여 다음 정보를 추출하여 JavaScript 객체로 반환하세요.
+
+1. `resources`: 로그에 나타난 모든 리소스(예: EC2 인스턴스-id, IAM 사용자 이름 등)의 목록
+2. `groups`: 리소스나 사용자를 그룹화할 수 있는 카테고리(예: EC2 인스턴스, IAM 사용자 그룹 등)
+3. `links`: 리소스와 사용자 간의 연결 관계 (중복을 제거하며 시간 순으로 연결)
+
+### 주의사항
+1. 'nodes' 안에 id에는 누락된 리소스가 있으면 안 됩니다.
+2. `links` 내의 `source`와 `target` 쌍은 중복 없이 반환해야 합니다.
+3. 로그에서 동일한 리소스가 여러 번 나타나더라도, links에는 동일한 source와 target 쌍이 중복되어 포함되면 안 됩니다.
+4. links 내의 source와 target 쌍은 로그별 또는 eventName별로 반복되어 나타나지 않아야 합니다. 동일한 쌍은 절대 중복으로 반환되지 않아야 합니다.
+다음과 같은 형식으로 JavaScript 객체를 반환하세요:
+
+"""javascript
+    const graphData = {{
+        nodes: [
+            {{ id: "resource_1", group: GroupName }},
+            {{ id: "resource_2", group: GroupName }},
+            {{ id: "resource_3", group: GroupName }},
+            {{ id: "resource_4", group: GroupName }}
+        ],
+        links: [
+            {{ source: "resource_1", target: "resource_2", value: 1 }},
+            {{ source: "resource_2", target: "resource_3", value: 2 }},
+            {{ source: "resource_1", target: "resource_3", value: 2 }}
+        ]
+    }}
+"""
+
+제공된 로그:
+{logs}
+
+응답은 텍스트 형식으로 하며, 코드는 아래 형식을 따릅니다:
+응답은 반드시 코드만 반환하며, 추가적인 텍스트나 ```(Triple Backtick)은 포함하지 않아야 합니다.
