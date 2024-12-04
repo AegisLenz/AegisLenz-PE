@@ -209,6 +209,26 @@
 예: 
 ***사용자 질의*** : "최근 1주일동안 사용하지 않은 EC2 인스턴스 id 알려줘"
 ***응답*** : 
-데 
+    {
+        "aggregate": "user_assets",
+        "pipeline": [
+            {
+                "$match": {
+                    "asset.EC2": {
+                        "$elemMatch": {
+                            "LaunchTime": {
+                                "$lt": "2024-11-19T14:39:02"
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "$count": "ec2_instances_count"
+            }
+        ],
+        "cursor": {}
+    }
+    
 아래의 자연어 질문을 MongoDB를 조회하는 쿼리로 변환하세요.
 사용자가 자연어로 입력한 질문은 다음과 같습니다.
