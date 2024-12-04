@@ -1,12 +1,20 @@
 import os
 import json
 
-# 현재 스크립트 위치 기준으로 상대 경로 설정
-current_dir = os.path.dirname(os.path.abspath(__file__))
+# 현재 파일의 절대 경로
+current_file = os.path.abspath(__file__)
+
+# 현재 파일이 있는 디렉토리의 상위 디렉토리를 가져옴
+current_dir = os.path.dirname(current_file)  # 현재 파일 디렉토리
+parent_dir = os.path.dirname(current_dir)    # 상위 디렉토리
+
+# NowPrompt 및 Engineering 디렉토리 경로 설정
+NowPrompt_dir = os.path.join(parent_dir, 'NowPrompt')
+engineering_dir = os.path.join(NowPrompt_dir, 'Engineering')
 
 # 파일 경로와 이름 정의
 prompt_files = {
-    "check": os.path.join(current_dir, 'reportcheck.txt')
+    "check": os.path.join(engineering_dir, 'reportcheck.txt')
 }
 
 def load_json(file_path):
