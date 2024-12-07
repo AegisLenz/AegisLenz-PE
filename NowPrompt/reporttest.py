@@ -10,9 +10,8 @@ api_key = os.getenv("OPEN_AI_SECRET_KEY")
 client = OpenAI(api_key=api_key)
 
 # 템플릿 파일 로드
-template_content = load_prompt(prompt_files["report"])  # 파일 내용을 읽어옴
-
-Field = input("\n양식: ")
+content = load_prompt(prompt_files["init"])  # 파일 내용을 읽어옴
+template_content = load_prompt(prompt_files["report"])  
 
 attack_time =  "2024년 09월 21일 08:20 KST"
 attack_type = "Execution, Command and Scripting Interpreter" 
@@ -1392,13 +1391,22 @@ logs = """
 ]
 """
 
+
 # 템플릿에서 직접 변수 치환
-template_content = template_content.format(**locals())
+content = content.format(**locals())
+prompt_txt = {"init": {"role": "system", "content": content}}
 
-prompt_txt = {"report": {"role": "system", "content": template_content}}
-
-# Classify 프롬프트에 대해 응답 생성
-report_response = text_response(client, "gpt-4o-mini", [prompt_txt["report"]])
+#응답 생성
+report_response = text_response(client, "gpt-4o-mini", [prompt_txt["init"]])
 print_response("생성된 공격 탐지 보고서", report_response)
+
+Field = input("\n양식: ")
+
+template_content = template_content.format(**locals())
+custom_txt = {"report": {"role": "system", "content": template_content}}
+
+#응답 생성
+custom_report = text_response(client, "gpt-4o-mini", [custom_txt["report"]])
+print_response("생성된 공격 탐지 보고서", custom_report)
 
 
