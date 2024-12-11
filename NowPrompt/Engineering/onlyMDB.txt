@@ -201,6 +201,51 @@
             }
             ]
         },
+        {
+            "Role": [
+                {
+                    "Path": "string",
+                    "RoleName": "string",
+                    "RoleId": "string",
+                    "Arn": "string",
+                    "CreateDate": "ISODate",
+                    "AssumeRolePolicyDocument": {
+                        "Version": "string",
+                        "Statement": [
+                            {
+                                "Effect": "string",
+                                "Principal": {
+                                    "Service": "string"
+                                },
+                                "Action": "string"
+                            }
+                        ]
+                    },
+                    "Description": "string",
+                    "MaxSessionDuration": "int",
+                    "PermissionsBoundary": "object",
+                    "Tags": ["object"],
+                    "AttachedPolicies": [
+                        {
+                            "PolicyName": "string",
+                            "PolicyArn": "string",
+                            "PolicyDocument": {
+                                "Version": "string",
+                                "Statement": [
+                                    {
+                                        "Sid": "string",
+                                        "Effect": "string",
+                                        "Action": ["string"],
+                                        "Resource": ["string"]
+                                    }
+                                ]
+                            }
+                        }
+                    ],
+                    "InlinePolicies": ["object"]
+                }
+            ]
+        }
         "user_id": "string"
     }
 
