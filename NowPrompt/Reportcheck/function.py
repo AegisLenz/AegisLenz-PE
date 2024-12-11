@@ -9,8 +9,8 @@ current_dir = os.path.dirname(current_file)  # 현재 파일 디렉토리
 parent_dir = os.path.dirname(current_dir)    # 상위 디렉토리
 
 # NowPrompt 및 Engineering 디렉토리 경로 설정
-NowPrompt_dir = os.path.join(parent_dir, 'NowPrompt')
-engineering_dir = os.path.join(NowPrompt_dir, 'Engineering')
+#NowPrompt_dir = os.path.join(parent_dir, 'NowPrompt')
+engineering_dir = os.path.join(parent_dir, 'Engineering')
 
 # 파일 경로와 이름 정의
 prompt_files = {
