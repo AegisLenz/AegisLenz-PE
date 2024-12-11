@@ -66,7 +66,7 @@ Log가 저장된 ElasticSearch index의 형식은 아래 {mapping} 부분을 참
           }
         }
       },
-      "eventTime": {
+      "@timestamp": {
         "type": "date"
       },
       "eventSource": {
