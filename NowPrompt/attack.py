@@ -74,8 +74,10 @@ while True:
 
     # Classify 프롬프트에 대해 응답 생성
     classify_response = generate_response(client, "gpt-4o-mini", [prompt_txt["Classify"], {"role": "user", "content": question}])
+    Dash_response = generate_response(client, "gpt-4o-mini", [prompt_txt["Dash"], {"role": "user", "content": question}])
 
     print(classify_response, "\n")
+    print(Dash_response, "\n")
 
     # classify_response에서 분류 결과 추출
     classify_data = json.loads(classify_response)
