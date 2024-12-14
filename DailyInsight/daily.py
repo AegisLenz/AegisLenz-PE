@@ -3,6 +3,7 @@ from elasticsearch import Elasticsearch, exceptions as es_exceptions
 import os
 import json
 import time
+import tiktoken
 from dotenv import load_dotenv
 from openai import OpenAI
 from function import prompt_files, load_prompt, print_response, text_response, save_history
@@ -12,6 +13,7 @@ load_dotenv(override=True)
 
 api_key = os.getenv("OPEN_AI_SECRET_KEY")
 client = OpenAI(api_key=api_key)
+encoder = tiktoken.encoding_for_model("gpt-4")
 
 def fetch_all_logs_with_scroll():
     """
@@ -19,7 +21,6 @@ def fetch_all_logs_with_scroll():
     """
     es_host = os.getenv("ES_HOST")
     es_port = os.getenv("ES_PORT")
-
 
     if not es_host or not es_port:
         raise ValueError("ES_HOST와 ES_PORT가 .env 파일에 설정되어 있지 않습니다.")
@@ -41,7 +42,7 @@ def fetch_all_logs_with_scroll():
             }
         },
         "sort": [{"@timestamp": {"order": "asc"}}],
-        "size": 170  # 한 번에 가져올 문서 수
+        "size": 1000  # 한 번에 가져올 문서 수
     }
 
     try:
@@ -74,50 +75,54 @@ def fetch_all_logs_with_scroll():
         print(f"Elasticsearch에서 로그를 가져오는 중 오류 발생: {str(e)}")
         return []
 
-def chunk_logs(logs, chunk_size=170):
+def calculate_token_count(logs):
     """
-    로그 데이터를 chunk_size 개수로 나눕니다.
+    로그 데이터의 총 토큰 수를 계산합니다.
     """
-    for i in range(0, len(logs), chunk_size):
-        yield logs[i:i + chunk_size]
+    log_string = "\n".join(json.dumps(log) for log in logs)
+    return len(encoder.encode(log_string))
 
+def process_logs_by_token_limit(logs, token_limit=120000):
+    """
+    로그 데이터를 토큰 한계를 고려해 나눕니다.
+    """
+    processed_chunks = []
+    current_chunk = []
+    current_token_count = 0
 
-def extract_cloudTrail():
+    for log in logs:
+        log_string = json.dumps(log)
+        log_token_count = len(encoder.encode(log_string))
 
-    # Elasticsearch에서 로그 가져오기
-    logs = fetch_all_logs_with_scroll()
+        if current_token_count + log_token_count > token_limit:
+            print(f"청크 생성: 현재 청크 토큰 수 {current_token_count}, JSON 개수 {len(current_chunk)}")
 
-    if not logs:
-        print("가져온 로그가 없습니다. 작업을 종료합니다.")
-        return
+            processed_chunks.append(current_chunk)
+            current_chunk = []
+            current_token_count = 0
 
-    template_content = load_prompt(prompt_files["daily"])  # 파일 내용을 읽어옴
+        current_chunk.append(log)
+        current_token_count += log_token_count
 
-    # 청크 데이터를 리스트로 변환
-    log_chunks = list(chunk_logs(logs, 170))
-    print(f"총 {len(log_chunks)}개의 청크로 나누어졌습니다.")
+    if current_chunk:
+        print(f"청크 생성: 현재 청크 토큰 수 {current_token_count}, JSON 개수 {len(current_chunk)}")
+        processed_chunks.append(current_chunk)
 
-    # 각 chunk에 대해 ChatGPT API 호출
-    response_list = []  # 각 chunk 응답 저장 리스트
-    for index, log_chunk in enumerate(log_chunks, start=1):
+    return processed_chunks
 
-        print(f"Chunk {index} 시작: {len(log_chunk)}개의 로그를 처리 중입니다.")
-        
-        # 로그 데이터를 문자열로 변환
-        log_string = "\n".join(str(log) for log in log_chunk)
+def summarize_logs(log_chunks):
+    """
+    각 로그 청크를 요약하고 최종 요약을 생성합니다.
+    """
+    template_content = load_prompt(prompt_files["daily"])
+    response_list = []
 
-                # 템플릿 복사 후 데이터 삽입
-        current_template = template_content  # 원본 템플릿 유지
-
-        try:
-            formatted_prompt = current_template.format(logs=log_string)
-        except Exception as e:
-            print(f"Chunk {index} 템플릿 포맷팅 중 오류 발생: {e}")
-            continue
+    for index, chunk in enumerate(log_chunks, start=1):
+        log_string = "\n".join(json.dumps(log) for log in chunk)
+        formatted_prompt = template_content.format(logs=log_string)
 
         prompt_txt = {"daily": {"role": "system", "content": formatted_prompt}}
 
-        # ChatGPT API 호출
         try:
             response = text_response(client, "gpt-4o-mini", [prompt_txt["daily"]])
             if response:
@@ -125,30 +130,44 @@ def extract_cloudTrail():
                 print(f"Chunk {index} 처리 완료. 응답 추가됨.")
                 print_response(f"Chunk {index} 요약", response)
                 save_history([{"role": "chunk", "content": response}], "chunk_all.txt", append=True)
-
             else:
                 print(f"Chunk {index} 처리 중 응답이 비어 있습니다.")
         except Exception as e:
             print(f"Chunk {index} 처리 중 오류 발생: {str(e)}")
-            continue
 
-    # 저장된 응답으로 최종 요약 생성
     if response_list:
         try:
             combined_prompt = "\n".join(response_list) + "\n데이터의 관계와 흐름을 파악해서 요약하세요."
             final_summary = text_response(client, "gpt-4o-mini", [{"role": "user", "content": combined_prompt}])
             print_response("최종 요약", final_summary)
             save_history([{"role": "summary", "content": final_summary}], "final_summary.txt", append=True)
-
         except Exception as e:
             print(f"최종 요약 생성 중 오류 발생: {str(e)}")
 
+def extract_cloudTrail():
+    """
+    전체 로그 처리 및 요약.
+    """
+    logs = fetch_all_logs_with_scroll()
+
+    if not logs:
+        print("가져온 로그가 없습니다. 작업을 종료합니다.")
+        return
+    # 전체 JSON 로그 개수 출력
+    print(f"가져온 전체 JSON 로그 개수: {len(logs)}")
+    
+    log_chunks = process_logs_by_token_limit(logs, token_limit=120000)
+    print(f"토큰 한계를 기준으로 총 {len(log_chunks)}개의 청크로 나누어졌습니다.")
+
+    # 각 청크의 JSON 개수 출력
+    for idx, chunk in enumerate(log_chunks, start=1):
+        print(f"Chunk {idx}의 JSON 개수: {len(chunk)}")
+
+    summarize_logs(log_chunks)
 
 if __name__ == "__main__":
-    # 실행 시간 측정 시작
     start_time = time.time()
     extract_cloudTrail()
-    # 실행 시간 측정 종료
     end_time = time.time()
     elapsed_time = end_time - start_time
 
