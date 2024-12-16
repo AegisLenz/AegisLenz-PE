@@ -75,13 +75,6 @@ def fetch_all_logs_with_scroll():
         print(f"Elasticsearch에서 로그를 가져오는 중 오류 발생: {str(e)}")
         return []
 
-def calculate_token_count(logs):
-    """
-    로그 데이터의 총 토큰 수를 계산합니다.
-    """
-    log_string = "\n".join(json.dumps(log) for log in logs)
-    return len(encoder.encode(log_string))
-
 def process_logs_by_token_limit(logs, token_limit=120000):
     """
     로그 데이터를 토큰 한계를 고려해 나눕니다.
