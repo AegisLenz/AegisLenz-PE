@@ -4,7 +4,7 @@ import json
 from dotenv import load_dotenv
 from openai import OpenAI
 from datetime import datetime
-from function import load_and_fill, prompt_files, load_prompt, save_history, generate_response, print_response, manage_history, text_response, generate_response_recom, load_json
+from function import dash_response, load_and_fill, prompt_files, load_prompt, save_history, generate_response, print_response, manage_history, text_response, generate_response_recom, load_json
 
 # 환경 변수 로드 및 API 클라이언트 설정
 load_dotenv()
@@ -74,7 +74,7 @@ while True:
 
     # Classify 프롬프트에 대해 응답 생성
     classify_response = generate_response(client, "gpt-4o-mini", [prompt_txt["Classify"], {"role": "user", "content": question}])
-    Dash_response = generate_response(client, "gpt-4o-mini", [prompt_txt["Dash"], {"role": "user", "content": question}])
+    Dash_response = dash_response(client, "gpt-4o-mini", [prompt_txt["Dash"], {"role": "user", "content": question}])
 
     print(classify_response, "\n")
     print(Dash_response, "\n")

@@ -58,6 +58,33 @@ def generate_response(client, model, messages):
     )
     return response.choices[0].message.content
 
+
+META_SCHEMA={
+    "name": "get_dashboards",
+    "schema" : {
+        "type": "object",
+        "properties": {
+            "Dashboards": {
+                "type": "array",
+                "items": {
+                    "type": "string"
+                }
+            }
+        },
+            "required": ["Dashboards"]    
+    }
+}
+
+# 응답 생성 
+def dash_response(client, model, messages):
+    response = client.chat.completions.create(
+        model=model,
+        messages=messages,
+        response_format={"type": "json_schema", "json_schema": META_SCHEMA}
+    )
+    return response.choices[0].message.content
+
+
 # 응답 출력
 def print_response(target_prompt, clean_answer):
     try:
