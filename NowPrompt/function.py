@@ -119,3 +119,4 @@ def load_and_fill(template_path, variables_path):
 
     # 자리 표시자를 변수 값으로 대체하여 반환
     return content.format(**variables)
+
