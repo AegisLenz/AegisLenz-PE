@@ -13,7 +13,7 @@ load_dotenv(override=True)
 
 api_key = os.getenv("OPEN_AI_SECRET_KEY")
 client = OpenAI(api_key=api_key)
-encoder = tiktoken.encoding_for_model("gpt-4")
+encoder = tiktoken.encoding_for_model("gpt-4-mini")
 
 def fetch_all_logs_with_scroll():
     """
