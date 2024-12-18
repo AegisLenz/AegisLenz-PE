@@ -3,3 +3,4 @@ FirstPT/
 Backup/
 __pycache__/
 hidden_Variable/
+*.pyc
