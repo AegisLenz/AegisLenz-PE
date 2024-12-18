@@ -15,9 +15,20 @@ api_key = os.getenv("OPEN_AI_SECRET_KEY")
 client = OpenAI(api_key=api_key)
 encoder = tiktoken.encoding_for_model("gpt-4-mini")
 
-def fetch_all_logs_with_scroll():
+def save_logs_to_file(logs, filename):
     """
-    Elasticsearch에서 Scroll API를 사용해 로그를 가져옵니다.
+    로그를 JSON 파일로 저장합니다.
+    """
+    try:
+        with open(filename, 'w', encoding='utf-8') as f:
+            json.dump(logs, f, ensure_ascii=False, indent=4)
+        print(f"로그가 파일에 저장되었습니다: {filename}")
+    except Exception as e:
+        print(f"로그 저장 중 오류 발생: {str(e)}")
+
+def fetch_attack_logs():
+    """
+    "cloudtrail-attack-logs" 인덱스에서 하루 동안 발생한 모든 공격 로그를 가져옵니다.
     """
     es_host = os.getenv("ES_HOST")
     es_port = os.getenv("ES_PORT")
@@ -27,42 +38,46 @@ def fetch_all_logs_with_scroll():
 
     es = Elasticsearch(f"{es_host}:{es_port}", max_retries=10, retry_on_timeout=True, request_timeout=120)
 
-    now = datetime.now(timezone.utc)  # 현재 시간
-    past_days = now - timedelta(days=1)  # 1일 전 시간
+    # 현재 날짜만 가져오기 (시간 제거)
+    now = datetime.now(timezone.utc).date()
+    # 올바른 날짜 범위 계산
+    past_day = now - timedelta(days=16)
+    past2_day = now - timedelta(days=15)
 
-    # Scroll API 설정
     query = {
         "query": {
             "range": {
                 "@timestamp": {
-                    "gte": past_days.isoformat(),
-                    "lte": now.isoformat(),
+                    "gte": past_day.isoformat(),
+                    "lte": past2_day.isoformat(),
                     "format": "strict_date_optional_time"
                 }
             }
         },
         "sort": [{"@timestamp": {"order": "asc"}}],
-        "size": 1000  # 한 번에 가져올 문서 수
+        "size": 1000
     }
 
     try:
-        print("Elasticsearch Scroll API를 사용해 로그를 가져옵니다...")
+        print("cloudtrail-attack-logs 인덱스에서 로그를 가져옵니다...")
+        print(f"쿼리 조건 확인: {json.dumps(query, indent=2)}")
 
-        # Scroll 시작
-        response = es.search(index="cloudtrail-logs-*", body=query, scroll="1m")
+        response = es.search(index="cloudtrail-attack-logs", body=query, scroll="1m")
         scroll_id = response["_scroll_id"]
         logs = [hit["_source"] for hit in response["hits"]["hits"]]
 
+        print(f"첫 번째 검색 결과 개수: {len(response['hits']['hits'])}")
+
         while True:
-            # Scroll 계속해서 가져오기
             scroll_response = es.scroll(scroll_id=scroll_id, scroll="1m")
             hits = scroll_response["hits"]["hits"]
             if not hits:
                 break
+            logs.extend([hit["_source"] for hit in hits])  # 새로 가져온 데이터를 병합
+            print(f"현재까지 가져온 로그 개수: {len(logs)}")
 
-            logs.extend([hit["_source"] for hit in hits])
-
-        print(f"총 {len(logs)}개의 로그를 Elasticsearch에서 가져왔습니다.")
+        print(f"총 {len(logs)}개의 공격 로그를 가져왔습니다.")
+        save_logs_to_file(logs, "attack_logs.json")
         return logs
 
     except es_exceptions.ConnectionError as e:
@@ -74,6 +89,67 @@ def fetch_all_logs_with_scroll():
     except Exception as e:
         print(f"Elasticsearch에서 로그를 가져오는 중 오류 발생: {str(e)}")
         return []
+
+
+def fetch_related_logs(attack_logs):
+    """
+    공격 로그의 timestamp를 기반으로 각 로그에 대해 관련된 로그를 가져옵니다.
+    """
+    es_host = os.getenv("ES_HOST")
+    es_port = os.getenv("ES_PORT")
+
+    if not es_host or not es_port:
+        raise ValueError("ES_HOST와 ES_PORT가 .env 파일에 설정되어 있지 않습니다.")
+
+    es = Elasticsearch(f"{es_host}:{es_port}", max_retries=10, retry_on_timeout=True, request_timeout=120)
+
+    related_logs = []
+
+    for log in attack_logs:
+        timestamp = log.get("@timestamp")
+        if not timestamp:
+            continue
+
+        log_time = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+        start_time = (log_time - timedelta(seconds=10)).isoformat()
+        end_time = (log_time + timedelta(seconds=10)).isoformat()
+
+        date_str = log_time.strftime("%Y.%m.%d")
+        index_name = f"cloudtrail-logs-{date_str}"
+
+        query = {
+            "query": {
+                "range": {
+                    "@timestamp": {
+                        "gte": start_time,
+                        "lte": end_time,
+                        "format": "strict_date_optional_time"
+                    }
+                }
+            },
+            "size": 1000
+        }
+
+        try:
+            response = es.search(index=index_name, body=query)
+            hits = [hit["_source"] for hit in response["hits"]["hits"]]
+            print(f"공격 로그 {timestamp} 주변에서 {len(hits)}개의 로그를 가져옴.")
+            related_logs.extend(hits)
+        except es_exceptions.ConnectionError as e:
+            print(f"Elasticsearch 연결 오류: {str(e)}")
+        except es_exceptions.RequestError as e:
+            print(f"Elasticsearch 요청 오류: {str(e)}")
+        except Exception as e:
+            print(f"관련 로그를 가져오는 중 오류 발생: {str(e)}")
+
+     # 중복 제거
+    unique_logs = {json.dumps(log, sort_keys=True): log for log in related_logs}
+    unique_logs_list = list(unique_logs.values())
+    print(f"중복 제거 후 총 {len(unique_logs_list)}개의 관련 로그가 남았습니다.")
+
+    print(f"총 {len(related_logs)}개의 관련 로그를 가져왔습니다.")
+    save_logs_to_file(related_logs, "related_logs.json")
+    return related_logs
 
 def process_logs_by_token_limit(logs, token_limit=120000):
     """
@@ -141,15 +217,22 @@ def extract_cloudTrail():
     """
     전체 로그 처리 및 요약.
     """
-    logs = fetch_all_logs_with_scroll()
+    attack_logs = fetch_attack_logs()
 
-    if not logs:
-        print("가져온 로그가 없습니다. 작업을 종료합니다.")
+    if not attack_logs:
+        print("가져온 공격 로그가 없습니다. 작업을 종료합니다.")
         return
+
+    related_logs = fetch_related_logs(attack_logs)
+
+    if not related_logs:
+        print("가져온 관련 로그가 없습니다. 작업을 종료합니다.")
+        return
+
     # 전체 JSON 로그 개수 출력
-    print(f"가져온 전체 JSON 로그 개수: {len(logs)}")
-    
-    log_chunks = process_logs_by_token_limit(logs, token_limit=120000)
+    print(f"가져온 전체 JSON 로그 개수: {len(related_logs)}")
+
+    log_chunks = process_logs_by_token_limit(related_logs, token_limit=120000)
     print(f"토큰 한계를 기준으로 총 {len(log_chunks)}개의 청크로 나누어졌습니다.")
 
     # 각 청크의 JSON 개수 출력

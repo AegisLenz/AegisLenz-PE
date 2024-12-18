@@ -9,6 +9,10 @@
 1. 공격으로 탐지된 근거는 로그를 보고 과거에서 현재까지의 시간 순서로 정리해야 합니다. 반드시 과거가 가장 먼저 나오고, 현재는 가장 나중에 나와야 합니다
 2. "stratus-red-team"은 offensive tool이므로, 해당 이름이 감지되면 공격 근거에서 제외해야합니다. 제외할 때는 "제외한다"는 표현 없이 자연스럽게 제외합니다.
 3. "stratus-red-team"과 "offensive tool"은 보고서에 언급하지 말고 제외합니다.
+4. 반드시, 공격 유형 필드엔, MITRE ATT&CK Cloud Matrix를 기반으로 {attack_type}에 대한 설명을 함께 작성해야 합니다. (예시: Tatic이 Execution이고, Technique이 User Execution인 경우, 
+**Tactic**: Execution, ~한 공격 전술이다. 
+**Technique**: User Execution, ~를 수행하는 공격이다."라는 자세한 설명 포함)
+
 
 제공된 로그:
 {logs}
