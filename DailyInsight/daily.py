@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from elasticsearch import Elasticsearch, exceptions as es_exceptions
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 import json
 import time
@@ -91,65 +92,57 @@ def fetch_attack_logs():
         return []
 
 
+# 공격 10초 전,후 로그 가져오기
+def fetch_logs_for_attack(es, log):
+    timestamp = log.get("@timestamp")
+    if not timestamp:
+        return []
+
+    log_time = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+    start_time = (log_time - timedelta(seconds=10)).isoformat()
+    end_time = (log_time + timedelta(seconds=10)).isoformat()
+    date_str = log_time.strftime("%Y.%m.%d")
+    index_name = f"cloudtrail-logs-{date_str}"
+
+    query = {
+        "query": {
+            "range": {
+                "@timestamp": {
+                    "gte": start_time,
+                    "lte": end_time,
+                    "format": "strict_date_optional_time"
+                }
+            }
+        },
+        "size": 1000
+    }
+
+    try:
+        response = es.search(index=index_name, body=query)
+        return [hit["_source"] for hit in response["hits"]["hits"]]
+    except Exception as e:
+        print(f"오류 발생: {str(e)}")
+        return []
+
 def fetch_related_logs(attack_logs):
-    """
-    공격 로그의 timestamp를 기반으로 각 로그에 대해 관련된 로그를 가져옵니다.
-    """
     es_host = os.getenv("ES_HOST")
     es_port = os.getenv("ES_PORT")
 
-    if not es_host or not es_port:
-        raise ValueError("ES_HOST와 ES_PORT가 .env 파일에 설정되어 있지 않습니다.")
-
     es = Elasticsearch(f"{es_host}:{es_port}", max_retries=10, retry_on_timeout=True, request_timeout=120)
 
-    related_logs = []
+    # 공격 전,후 로그 병렬처리
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        future_to_log = {executor.submit(fetch_logs_for_attack, es, log): log for log in attack_logs}
+        related_logs = []
+        for future in as_completed(future_to_log):
+            related_logs.extend(future.result())
 
-    for log in attack_logs:
-        timestamp = log.get("@timestamp")
-        if not timestamp:
-            continue
-
-        log_time = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
-        start_time = (log_time - timedelta(seconds=10)).isoformat()
-        end_time = (log_time + timedelta(seconds=10)).isoformat()
-
-        date_str = log_time.strftime("%Y.%m.%d")
-        index_name = f"cloudtrail-logs-{date_str}"
-
-        query = {
-            "query": {
-                "range": {
-                    "@timestamp": {
-                        "gte": start_time,
-                        "lte": end_time,
-                        "format": "strict_date_optional_time"
-                    }
-                }
-            },
-            "size": 1000
-        }
-
-        try:
-            response = es.search(index=index_name, body=query)
-            hits = [hit["_source"] for hit in response["hits"]["hits"]]
-            print(f"공격 로그 {timestamp} 주변에서 {len(hits)}개의 로그를 가져옴.")
-            related_logs.extend(hits)
-        except es_exceptions.ConnectionError as e:
-            print(f"Elasticsearch 연결 오류: {str(e)}")
-        except es_exceptions.RequestError as e:
-            print(f"Elasticsearch 요청 오류: {str(e)}")
-        except Exception as e:
-            print(f"관련 로그를 가져오는 중 오류 발생: {str(e)}")
-
-     # 중복 제거
+    # 중복 로그 제거
     unique_logs = {json.dumps(log, sort_keys=True): log for log in related_logs}
     unique_logs_list = list(unique_logs.values())
     print(f"중복 제거 후 총 {len(unique_logs_list)}개의 관련 로그가 남았습니다.")
-
-    print(f"총 {len(related_logs)}개의 관련 로그를 가져왔습니다.")
-    save_logs_to_file(related_logs, "related_logs.json")
-    return related_logs
+    save_logs_to_file(unique_logs_list, "related_logs.json")
+    return unique_logs_list
 
 def process_logs_by_token_limit(logs, token_limit=120000):
     """
