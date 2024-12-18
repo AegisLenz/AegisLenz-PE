@@ -92,7 +92,8 @@ while True:
             question = ""
 
             if prior_answer:
-                question += f"\n 이전 질문: {prior_question}\n 이전 응답 데이터: {prior_answer} \n 반드시 이전 응답 데이터를 반영해서 다음 질문을 해결하세요."
+                #이전 질문에 대한 응답: {prior_return}
+                question += f"\n 이전 질문: {prior_question}\n 이전 프롬프트의 응답: {prior_answer} \n 반드시 이전 응답 데이터를 반영해서 다음 질문을 해결하세요."
             
             question += sub_question["question"]
             print(topic, question)
