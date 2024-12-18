@@ -66,7 +66,7 @@ while True:
     print(f"추천 질문 3가지 : {follow_up_question} ")
 
     question = input("\n 3가지 질문 중 하나를 선택하세요. : ")
-
+    
     # 선택한 질문 넣어주기
     query = f"현재 날짜와 시간은 {current_datetime}입니다. 이 시간에 맞춰서 작업을 진행해주세요. 사용자 자연어 질문: {question} 답변은 반드시 json 형식으로 나옵니다."
 
@@ -81,7 +81,7 @@ while True:
     # classify_response에서 분류 결과 추출
     classify_data = json.loads(classify_response)
     print(classify_data, "\n")
-
+    neededDetail = True
     if "sub_questions" in classify_data:
         final_responses = {}
         prior_answer = None
