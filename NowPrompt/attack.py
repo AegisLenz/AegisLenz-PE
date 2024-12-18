@@ -75,67 +75,78 @@ while True:
     # Classify 프롬프트에 대해 응답 생성
     classify_response = generate_response(client, "gpt-4o-mini", [prompt_txt["Classify"], {"role": "user", "content": question}])
     Dash_response = dash_response(client, "gpt-4o-mini", [prompt_txt["Dash"], {"role": "user", "content": question}])
-
-    print(classify_response, "\n")
+    
     print(Dash_response, "\n")
 
     # classify_response에서 분류 결과 추출
     classify_data = json.loads(classify_response)
+    print(classify_data, "\n")
 
-    # 'topics' 키의 값을 직접 가져와 확인
-    classification_result = classify_data.get("topics")  # 'topics'가 단일 값
-    
-    # 분류 결과에 따른 프롬프트 설정
+    if "sub_questions" in classify_data:
+        final_responses = {}
+        prior_answer = None
+        prior_question = None
 
-    # Detail 프롬프트 호출 및 응답 생성
-    if classification_result in ["ES", "DB"]:
-        
-        # 각 프롬프트에 사용자 질문 추가 및 응답 생성
-        prompt = []
-        prompt.append(prompt_txt[classification_result])
-        prompt.append({"role": "user", "content": query})
-        
-        clean_answer = generate_response(client, "gpt-4o-mini", prompt)
+        for sub_question in classify_data["sub_questions"]:
+            topic = sub_question["topics"]
+            question = ""
 
-        # json 응답 출력 (target 프롬프트)
-        print_response(classification_result, clean_answer)
+            if prior_answer:
+                question += f"\n 이전 질문: {prior_question}\n 이전 응답 데이터: {prior_answer} \n 반드시 이전 응답 데이터를 반영해서 다음 질문을 해결하세요."
+            
+            question += sub_question["question"]
+            print(topic, question)
 
-        prompt = []
-        prompt.append(prompt_txt["Detail"])
-        prompt.append({"role": "user", "content":  f"{query}\n{classification_result} 응답: {clean_answer}"})
+            # 주제에 맞는 프롬프트 실행
+            if topic in ["ES", "DB"]:
+                prompt = []
+                prompt.append(prompt_txt[topic])
+                prompt.append({"role": "user", "content": question})
+                sub_response = generate_response(client, "gpt-4o-mini", prompt)
+            
+            elif topic == "Normal": 
+                sub_response = text_response(client, "gpt-4o-mini", [{"role": "user", "content": question}])
+                neededDetail = False
 
-        #설명 응답 생성
-        detail_response = text_response(client, "gpt-4o-mini" , prompt)
-        print_response("Detail", detail_response)
+            elif topic == "Policy":
+                policy = {}
+                basedir = os.path.dirname(os.path.abspath(__file__)) 
+                existing_policy_path = os.path.join(basedir, 'sample_data', 'Existing_policy.json')
+                changed_policy_path = os.path.join(basedir, 'sample_data', 'Changed_policy.json')
+                original_policy = load_json(existing_policy_path)
+                least_privilege_policy = load_json(changed_policy_path)
+            
+                prompt = []
+                policy_prompt_content = prompt_txt["Policy"]["content"].format(
+                    original_policy=json.dumps(original_policy, indent=2), 
+                    least_privilege_policy=json.dumps(least_privilege_policy, indent=2)
+                )
+                prompt.append({"role": "system", "content": policy_prompt_content})
+                prompt.append({"role": "user", "content": question})
+                sub_response = text_response(client, "gpt-4o-mini", prompt)
+                neededDetail = False
 
-        #histories["recom"].append({"role": "assistant", "content": f"응답:{detail_response}"})
-    
-    elif classification_result == "Normal": # 3개의 주제에 해당하지 않는 질문
-        normal_response = text_response(client, "gpt-4o-mini", [{"role": "user", "content": question}])
-        histories["recom"].append({"role": "assistant", "content": f"응답:{normal_response}"})
-        print(normal_response) 
-        continue        
+            if topic not in final_responses:
+                final_responses[topic] = []
+            if(topic in ['ES', 'DB']):
+                final_responses[topic].append(json.loads(sub_response))
+            else:
+                final_responses[topic].append(sub_response)
 
-    elif classification_result == "Policy":
-        policy = {}
-        
-        basedir = os.path.dirname(os.path.abspath(__file__)) 
-        existing_policy_path = os.path.join(basedir, 'sample_data', 'Existing_policy.json')
-        changed_policy_path = os.path.join(basedir, 'sample_data', 'Changed_policy.json')
-        original_policy = load_json(existing_policy_path)
-        least_privilege_policy = load_json(changed_policy_path)
+            prior_question = sub_question['question']
+            prior_answer = sub_response
 
-        prompt = []
-        policy_prompt_content = prompt_txt["Policy"]["content"].format(
-            original_policy=json.dumps(original_policy, indent=2), 
-            least_privilege_policy=json.dumps(least_privilege_policy, indent=2)
-        )
-        prompt.append({"role": "system", "content": policy_prompt_content})
-        prompt.append({"role": "user", "content": question})
-        policy_answer = text_response(client, "gpt-4o-mini", prompt)
-        print(policy_answer)
-        
-        histories["recom"].append({"role": "assistant", "content": policy_answer})
+        # 복합 질문 결과 출력
+        print(json.dumps(final_responses, indent=2, ensure_ascii=False))
+
+        if neededDetail:
+            prompt = []
+            prompt.append(prompt_txt["Detail"])
+            prompt.append({"role": "user", "content":  f"{final_responses}"})
+
+            #설명 응답 생성
+            detail_response = text_response(client, "gpt-4o-mini" , prompt)
+            print_response("Detail", detail_response)
 
     append_recom = "위 사용자가 선택한 질의와 응답을 참고해서 다시 추천 질문 세개를 만들어주세요. 이전과 절대 중복되지 않는 **다양한 주제**로 세 줄 질문을 생성해 주세요."
     histories["recom"].append({"role": "assistant", "content": append_recom})
