@@ -5,7 +5,7 @@ from openai import OpenAI
 from function import prompt_files, load_prompt, print_response, text_response
 
 # 환경 변수 로드 및 API 클라이언트 설정
-load_dotenv()
+load_dotenv(override=True)
 api_key = os.getenv("OPEN_AI_SECRET_KEY")
 client = OpenAI(api_key=api_key)
 

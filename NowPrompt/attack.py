@@ -7,7 +7,7 @@ from datetime import datetime
 from function import dash_response, load_and_fill, prompt_files, load_prompt, save_history, generate_response, print_response, manage_history, text_response, generate_response_recom, load_json
 
 # 환경 변수 로드 및 API 클라이언트 설정
-load_dotenv()
+load_dotenv(override=True)
 api_key = os.getenv("OPEN_AI_SECRET_KEY")
 client = OpenAI(api_key=api_key)
 
@@ -21,7 +21,6 @@ def generate_follow_up_question(client, prompt, previous_questions):
     prompt_text  = f"{prompt}\n 이전과 중복되지 않는 세 줄 질문을 생성해 주세요. 출력은 반드시 세개의 간단한 질문으로만 주세요."
 
     while True:
-        
         
         # 모델로부터 응답 생성 (3가지 질문을 하나의 응답으로 받음)
         response = generate_response_recom(client, "gpt-4o-mini", histories["recom"])

@@ -6,7 +6,7 @@ from datetime import datetime
 from function import dash_response, load_and_fill, prompt_files, load_prompt, save_history, generate_response, print_response, manage_history, text_response, load_json
 
 # 환경 변수 로드 및 API 클라이언트 설정
-load_dotenv()
+load_dotenv(override=True)
 api_key = os.getenv("OPEN_AI_SECRET_KEY")
 client = OpenAI(api_key=api_key)
 
