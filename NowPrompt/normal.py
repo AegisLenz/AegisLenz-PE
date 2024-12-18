@@ -23,6 +23,7 @@ prompt_txt = {name: {"role": "system", "content": load_prompt(path)} for name, p
 
 # 대화 진행 루프
 while True:
+    neededDetail = True
     question = input("\n질문: ")
     query = f"현재 날짜와 시간은 {current_datetime}입니다. 이 시간에 맞춰서 작업을 진행해주세요. 사용자의 자연어 질문: {question} 답변은 반드시 json 형식으로 나옵니다."
 
@@ -57,6 +58,7 @@ while True:
             
             elif topic == "Normal": 
                 sub_response = text_response(client, "gpt-4o-mini", [{"role": "user", "content": question}])
+                neededDetail = False
 
             elif topic == "Policy":
                 policy = {}
@@ -74,6 +76,7 @@ while True:
                 prompt.append({"role": "system", "content": policy_prompt_content})
                 prompt.append({"role": "user", "content": question})
                 sub_response = text_response(client, "gpt-4o-mini", prompt)
+                neededDetail = False
 
             if topic not in final_responses:
                 final_responses[topic] = []
@@ -88,13 +91,14 @@ while True:
         # 복합 질문 결과 출력
         print(json.dumps(final_responses, indent=2, ensure_ascii=False))
 
-        prompt = []
-        prompt.append(prompt_txt["Detail"])
-        prompt.append({"role": "user", "content":  f"{final_responses}"})
+        if neededDetail:
+            prompt = []
+            prompt.append(prompt_txt["Detail"])
+            prompt.append({"role": "user", "content":  f"{final_responses}"})
 
-        #설명 응답 생성
-        detail_response = text_response(client, "gpt-4o-mini" , prompt)
-        print_response("Detail", detail_response)
+            #설명 응답 생성
+            detail_response = text_response(client, "gpt-4o-mini" , prompt)
+            print_response("Detail", detail_response)
 
     #Dash_response = generate_response(client, "gpt-4o-mini", [prompt_txt["Dash"], {"role": "user", "content": query}])
     #print(Dash_response, "\n")  
