@@ -102,7 +102,7 @@ def fetch_attack_logs():
 def fetch_logs_for_attack(es, log):
     timestamp = log.get("@timestamp")
     if not timestamp:
-        return []
+        return None, []
 
     log_time = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
     start_time = (log_time - timedelta(seconds=10)).isoformat()
@@ -124,10 +124,12 @@ def fetch_logs_for_attack(es, log):
 
     try:
         response = es.search(index=index_name, body=query)
-        return [hit["_source"] for hit in response["hits"]["hits"]] 
+        related_logs = [hit["_source"] for hit in response["hits"]["hits"]]
+        return timestamp, related_logs
+    
     except Exception as e:
         print(f"오류 발생: {str(e)}")
-        return []
+        return timestamp, []
 
 def process_logs_by_token_limit(logs, token_limit=120000):
     """
@@ -163,7 +165,7 @@ def summarize_logs(log_chunks, timestamps):
 
     for index, (chunk, timestamp) in enumerate(zip(log_chunks, timestamps), start=1):
         log_string = "\n".join(json.dumps(log) for log in chunk)
-        formatted_prompt = template_content.format(logs=log_string)
+        formatted_prompt = template_content.format(logs=log_string, timestamp=timestamp)
 
         prompt_txt = {"daily": {"role": "system", "content": formatted_prompt}}
 
@@ -224,10 +226,15 @@ def fetch_related_logs_and_summarize(attack_logs):
         related_logs_summaries = []
         all_related_logs = []  # 모든 관련 로그를 누적 저장
         chunk_timestamps = []  # 청크별 타임스탬프 저장
+        final_summaries = []  # 최종 요약 리스트
 
 
         for attack_log, future in zip(attack_logs, as_completed(future_to_log)):
-            related_logs = future.result()
+            query_timestamp, related_logs = future.result()
+
+            if not query_timestamp:
+                print("Skipping log: Missing query timestamp.")
+                continue
 
             print(f"가져온 관련 로그 개수 : {len(related_logs)}")
 
@@ -243,28 +250,37 @@ def fetch_related_logs_and_summarize(attack_logs):
 
             print(f"삭제된 로그 개수: {len(deleted_logs)}")
             print(f"가져온 관련 로그 개수 (중복 및 공격 로그 제외 후): {len(unique_logs)}")
-
+            
+            # 관련 로그 저장
             all_related_logs.extend(unique_logs)
+
+            # 청크로 나누고 요약
             log_chunks = process_logs_by_token_limit(unique_logs)
-            timestamp = attack_log.get("@timestamp")
+            chunk_timestamps = [query_timestamp] * len(log_chunks)
+
             chunk_summaries = summarize_logs(log_chunks, chunk_timestamps)  or []  # None이면 빈 리스트로 대체
             related_logs_summaries.extend(chunk_summaries)
 
-    # 모든 관련 로그를 한 번에 저장
-    save_logs_to_file(all_related_logs, "related_logs.json")
+             # 청크 요약 결합 후 최종 요약 생성
+            if chunk_summaries:
+                combined_chunk_summary = "\n".join(chunk_summaries)
+                final_prompt = combined_chunk_summary + f"\n데이터의 관계와 흐름을 파악해서 핵심내용만 간단하게 요약하세요. 결론은 반드시 생략하고 중복되는 내용도 생략합니다. 또한, 반드시 제목은 **{query_timestamp}에 발생한 공격의 전후로그 분석**이라고 해야합니다. 응답은 반드시 markdown 형식을 반환합니다."
 
-    # 전체 관련 로그 요약
-    combined_summary = "\n".join(related_logs_summaries)
-    final_prompt = combined_summary + f"\n데이터의 관계와 흐름을 파악해서 요약하세요. 반드시 제목은 **{timestamp}에 발생한 공격의 전후로그 분석**이라고 해야합니다."
+                try:
+                    final_summary = text_response(client, "gpt-4o-mini", [{"role": "user", "content": final_prompt}])
+                    print(f"{query_timestamp}에 대한 최종 요약 완료.")
+                    # 모든 관련 로그를 한 번에 저장
+                    save_logs_to_file(all_related_logs, "related_logs.json") #확인용
+                    final_summaries.append(final_summary)  # 최종 요약만 리스트에 추가
 
-    try:
-        final_summary = text_response(client, "gpt-4o-mini", [{"role": "user", "content": final_prompt}])
-        save_history([{"role": "summary", "content": final_summary}], "final_summary.txt", append=True)
-        print("최종 요약 완료.")
-        return final_summary
-    except Exception as e:
-        print(f"최종 요약 생성 중 오류 발생: {str(e)}")
-        return None
+                except Exception as e:
+                    print(f"{query_timestamp}에 대한 최종 요약 생성 중 오류 발생: {str(e)}")
+                    return None
+
+
+        # 최종 결과 반환
+        return "\n\n---\n\n".join(final_summaries).strip()
+
 
 def extract_cloudTrail():
     """
@@ -277,6 +293,8 @@ def extract_cloudTrail():
         return
 
     final_summary = fetch_related_logs_and_summarize(attack_logs)
+    save_logs_to_file(final_summary, "final_summary.md")
+
 
     if final_summary:
         print("최종 요약:")
