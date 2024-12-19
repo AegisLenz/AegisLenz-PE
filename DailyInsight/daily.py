@@ -154,23 +154,27 @@ def process_logs_by_token_limit(logs, token_limit=120000):
 
     return processed_chunks
 
-def summarize_logs(log_chunks):
+def summarize_logs(log_chunks, timestamps):
     """
     각 로그 청크를 요약하고 요약 결과를 반환합니다.
     """
     template_content = load_prompt(prompt_files["daily"])
     response_list = []
 
-    for index, chunk in enumerate(log_chunks, start=1):
+    for index, (chunk, timestamp) in enumerate(zip(log_chunks, timestamps), start=1):
         log_string = "\n".join(json.dumps(log) for log in chunk)
         formatted_prompt = template_content.format(logs=log_string)
 
         prompt_txt = {"daily": {"role": "system", "content": formatted_prompt}}
 
+        title = f"**{timestamp}에 발생한 공격의 전후로그 분석**"
+
         try:
             response = text_response(client, "gpt-4o-mini", [prompt_txt["daily"]])
             if response:
-                response_list.append(response)
+
+                response_with_title = f"{title}\n\n{response}"
+                response_list.append(response_with_title)
                 print(f"Chunk {index} 처리 완료. 응답 추가됨.")
                 print_response(f"Chunk {index} 요약", response)
                 save_history([{"role": "chunk", "content": response}], "chunk_all.txt", append=True)
@@ -199,7 +203,7 @@ def fetch_related_logs_and_summarize(attack_logs):
 
     """
     여러 공격 로그의 타임스탬프를 기반으로 관련 로그를 가져오고 요약합니다.
-    중복 로그는 해시값을 기준으로 제거됩니다.
+    중복 로그는 필드를 기준으로 제거됩니다.
     """
     es = initialize_elasticsearch()
     seen_logs = set()
@@ -219,6 +223,8 @@ def fetch_related_logs_and_summarize(attack_logs):
         future_to_log = {executor.submit(fetch_logs_for_attack, es, log): log for log in attack_logs}
         related_logs_summaries = []
         all_related_logs = []  # 모든 관련 로그를 누적 저장
+        chunk_timestamps = []  # 청크별 타임스탬프 저장
+
 
         for attack_log, future in zip(attack_logs, as_completed(future_to_log)):
             related_logs = future.result()
@@ -241,7 +247,7 @@ def fetch_related_logs_and_summarize(attack_logs):
             all_related_logs.extend(unique_logs)
             log_chunks = process_logs_by_token_limit(unique_logs)
             timestamp = attack_log.get("@timestamp")
-            chunk_summaries = summarize_logs(log_chunks)  or []  # None이면 빈 리스트로 대체
+            chunk_summaries = summarize_logs(log_chunks, chunk_timestamps)  or []  # None이면 빈 리스트로 대체
             related_logs_summaries.extend(chunk_summaries)
 
     # 모든 관련 로그를 한 번에 저장
