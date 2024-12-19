@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta, timezone
 from elasticsearch import Elasticsearch, exceptions as es_exceptions
+from concurrent.futures import ThreadPoolExecutor, as_completed
 import os
 import json
 import time
@@ -15,54 +16,74 @@ api_key = os.getenv("OPEN_AI_SECRET_KEY")
 client = OpenAI(api_key=api_key)
 encoder = tiktoken.encoding_for_model("gpt-4-mini")
 
-def fetch_all_logs_with_scroll():
+def save_logs_to_file(logs, filename):
     """
-    Elasticsearch에서 Scroll API를 사용해 로그를 가져옵니다.
+    로그를 JSON 파일로 저장합니다.
     """
+    try:
+        with open(filename, 'w', encoding='utf-8') as f:
+            json.dump(logs, f, ensure_ascii=False, indent=4)
+        print(f"로그가 파일에 저장되었습니다: {filename}")
+    except Exception as e:
+        print(f"로그 저장 중 오류 발생: {str(e)}")
+
+def initialize_elasticsearch():
+    """Initialize Elasticsearch client."""
     es_host = os.getenv("ES_HOST")
     es_port = os.getenv("ES_PORT")
 
     if not es_host or not es_port:
-        raise ValueError("ES_HOST와 ES_PORT가 .env 파일에 설정되어 있지 않습니다.")
+        raise ValueError("ES_HOST and ES_PORT must be set in .env file.")
 
-    es = Elasticsearch(f"{es_host}:{es_port}", max_retries=10, retry_on_timeout=True, request_timeout=120)
+    return Elasticsearch(f"{es_host}:{es_port}", max_retries=10, retry_on_timeout=True, request_timeout=120)
 
-    now = datetime.now(timezone.utc)  # 현재 시간
-    past_days = now - timedelta(days=1)  # 1일 전 시간
+def fetch_attack_logs():
+    """
+    "cloudtrail-attack-logs" 인덱스에서 하루 동안 발생한 모든 공격 로그를 가져옵니다.
+    전날 공격이 없어서 이전 공격을 가져옵니다.
+    """
+    es = initialize_elasticsearch()
 
-    # Scroll API 설정
+    # 현재 날짜만 가져오기 (시간 제거)
+    now = datetime.now(timezone.utc).date()
+    # 올바른 날짜 범위 계산
+    past_day = now - timedelta(days=17)
+    past2_day = now - timedelta(days=16)
+
     query = {
         "query": {
             "range": {
                 "@timestamp": {
-                    "gte": past_days.isoformat(),
-                    "lte": now.isoformat(),
+                    "gte": past_day.isoformat(),
+                    "lte": past2_day.isoformat(),
                     "format": "strict_date_optional_time"
                 }
             }
         },
         "sort": [{"@timestamp": {"order": "asc"}}],
-        "size": 1000  # 한 번에 가져올 문서 수
+        "size": 1000
     }
 
     try:
-        print("Elasticsearch Scroll API를 사용해 로그를 가져옵니다...")
+        print("cloudtrail-attack-logs 인덱스에서 로그를 가져옵니다...")
+        print(f"쿼리 조건 확인: {json.dumps(query, indent=2)}")
 
-        # Scroll 시작
-        response = es.search(index="cloudtrail-logs-*", body=query, scroll="1m")
+        response = es.search(index="cloudtrail-attack-logs", body=query, scroll="1m")
         scroll_id = response["_scroll_id"]
         logs = [hit["_source"] for hit in response["hits"]["hits"]]
 
+        print(f"첫 번째 검색 결과 개수: {len(response['hits']['hits'])}")
+
         while True:
-            # Scroll 계속해서 가져오기
             scroll_response = es.scroll(scroll_id=scroll_id, scroll="1m")
             hits = scroll_response["hits"]["hits"]
             if not hits:
                 break
+            logs.extend([hit["_source"] for hit in hits])  # 새로 가져온 데이터를 병합
+            print(f"현재까지 가져온 로그 개수: {len(logs)}")
 
-            logs.extend([hit["_source"] for hit in hits])
-
-        print(f"총 {len(logs)}개의 로그를 Elasticsearch에서 가져왔습니다.")
+        print(f"총 {len(logs)}개의 공격 로그를 가져왔습니다.")
+        save_logs_to_file(logs, "attack_logs.json")
         return logs
 
     except es_exceptions.ConnectionError as e:
@@ -73,15 +94,48 @@ def fetch_all_logs_with_scroll():
         return []
     except Exception as e:
         print(f"Elasticsearch에서 로그를 가져오는 중 오류 발생: {str(e)}")
-        return []
+
+    return []
+
+
+# 공격 10초 전,후 로그 가져오기
+def fetch_logs_for_attack(es, log):
+    timestamp = log.get("@timestamp")
+    if not timestamp:
+        return None, []
+
+    log_time = datetime.fromisoformat(timestamp.replace("Z", "+00:00"))
+    start_time = (log_time - timedelta(seconds=10)).isoformat()
+    end_time = (log_time + timedelta(seconds=10)).isoformat()
+    index_name = f"cloudtrail-logs-{log_time.strftime('%Y.%m.%d')}"
+
+    query = {
+        "query": {
+            "range": {
+                "@timestamp": {
+                    "gte": start_time,
+                    "lte": end_time,
+                    "format": "strict_date_optional_time"
+                }
+            }
+        },
+        "size": 1000
+    }
+
+    try:
+        response = es.search(index=index_name, body=query)
+        related_logs = [hit["_source"] for hit in response["hits"]["hits"]]
+        return timestamp, related_logs
+    
+    except Exception as e:
+        print(f"오류 발생: {str(e)}")
+        return timestamp, []
 
 def process_logs_by_token_limit(logs, token_limit=120000):
     """
     로그 데이터를 토큰 한계를 고려해 나눕니다.
     """
-    processed_chunks = []
-    current_chunk = []
-    current_token_count = 0
+    processed_chunks, current_chunk, current_token_count = [], [], 0
 
     for log in logs:
         log_string = json.dumps(log)
@@ -91,8 +145,7 @@ def process_logs_by_token_limit(logs, token_limit=120000):
             print(f"청크 생성: 현재 청크 토큰 수 {current_token_count}, JSON 개수 {len(current_chunk)}")
 
             processed_chunks.append(current_chunk)
-            current_chunk = []
-            current_token_count = 0
+            current_chunk, current_token_count = [], 0
 
         current_chunk.append(log)
         current_token_count += log_token_count
@@ -103,23 +156,27 @@ def process_logs_by_token_limit(logs, token_limit=120000):
 
     return processed_chunks
 
-def summarize_logs(log_chunks):
+def summarize_logs(log_chunks, timestamps):
     """
-    각 로그 청크를 요약하고 최종 요약을 생성합니다.
+    각 로그 청크를 요약하고 요약 결과를 반환합니다.
     """
     template_content = load_prompt(prompt_files["daily"])
     response_list = []
 
-    for index, chunk in enumerate(log_chunks, start=1):
+    for index, (chunk, timestamp) in enumerate(zip(log_chunks, timestamps), start=1):
         log_string = "\n".join(json.dumps(log) for log in chunk)
-        formatted_prompt = template_content.format(logs=log_string)
+        formatted_prompt = template_content.format(logs=log_string, timestamp=timestamp)
 
         prompt_txt = {"daily": {"role": "system", "content": formatted_prompt}}
+
+        title = f"**{timestamp}에 발생한 공격의 전후로그 분석**"
 
         try:
             response = text_response(client, "gpt-4o-mini", [prompt_txt["daily"]])
             if response:
-                response_list.append(response)
+
+                response_with_title = f"{title}\n\n{response}"
+                response_list.append(response_with_title)
                 print(f"Chunk {index} 처리 완료. 응답 추가됨.")
                 print_response(f"Chunk {index} 요약", response)
                 save_history([{"role": "chunk", "content": response}], "chunk_all.txt", append=True)
@@ -128,40 +185,125 @@ def summarize_logs(log_chunks):
         except Exception as e:
             print(f"Chunk {index} 처리 중 오류 발생: {str(e)}")
 
-    if response_list:
-        try:
-            combined_prompt = "\n".join(response_list) + "\n데이터의 관계와 흐름을 파악해서 요약하세요."
-            final_summary = text_response(client, "gpt-4o-mini", [{"role": "user", "content": combined_prompt}])
-            print_response("최종 요약", final_summary)
-            save_history([{"role": "summary", "content": final_summary}], "final_summary.txt", append=True)
-        except Exception as e:
-            print(f"최종 요약 생성 중 오류 발생: {str(e)}")
+    return response_list  # 처리된 요약을 반환
+
+
+def is_duplicate_log(log, seen_logs):
+    """필드 비교하여 중복 제외"""
+    log_key = (
+        log.get("@timestamp"),
+        log.get("eventName"),
+        log.get("eventID")
+    )
+    if log_key in seen_logs:
+        return True
+    seen_logs.add(log_key)
+    return False
+
+
+def fetch_related_logs_and_summarize(attack_logs):
+
+    """
+    여러 공격 로그의 타임스탬프를 기반으로 관련 로그를 가져오고 요약합니다.
+    중복 로그는 필드를 기준으로 제거됩니다.
+    """
+    es = initialize_elasticsearch()
+    seen_logs = set()
+    deleted_logs = []
+
+    # 공격 로그를 중복 방지를 위해 seen_logs에 추가
+    for log in attack_logs:
+        log_key = (
+            log.get("@timestamp"),
+            log.get("eventName"),
+            log.get("eventID")
+        )
+        seen_logs.add(log_key)
+
+
+    with ThreadPoolExecutor(max_workers=5) as executor:
+        future_to_log = {executor.submit(fetch_logs_for_attack, es, log): log for log in attack_logs}
+        related_logs_summaries = []
+        all_related_logs = []  # 모든 관련 로그를 누적 저장
+        chunk_timestamps = []  # 청크별 타임스탬프 저장
+        final_summaries = []  # 최종 요약 리스트
+
+
+        for attack_log, future in zip(attack_logs, as_completed(future_to_log)):
+            query_timestamp, related_logs = future.result()
+
+            if not query_timestamp:
+                print("Skipping log: Missing query timestamp.")
+                continue
+
+            print(f"가져온 관련 로그 개수 : {len(related_logs)}")
+
+            if not related_logs:
+                continue
+
+            unique_logs = []
+            for log in related_logs:
+                if is_duplicate_log(log, seen_logs):
+                    deleted_logs.append(log)
+                else:
+                    unique_logs.append(log)
+
+            print(f"삭제된 로그 개수: {len(deleted_logs)}")
+            print(f"가져온 관련 로그 개수 (중복 및 공격 로그 제외 후): {len(unique_logs)}")
+            
+            # 관련 로그 저장
+            all_related_logs.extend(unique_logs)
+
+            # 청크로 나누고 요약
+            log_chunks = process_logs_by_token_limit(unique_logs)
+            chunk_timestamps = [query_timestamp] * len(log_chunks)
+
+            chunk_summaries = summarize_logs(log_chunks, chunk_timestamps)  or []  # None이면 빈 리스트로 대체
+            related_logs_summaries.extend(chunk_summaries)
+
+             # 청크 요약 결합 후 최종 요약 생성
+            if chunk_summaries:
+                combined_chunk_summary = "\n".join(chunk_summaries)
+                final_prompt = combined_chunk_summary + f"\n데이터의 관계와 흐름을 파악해서 핵심내용만 간단하게 요약하세요. 결론은 반드시 생략하고 중복되는 내용도 생략합니다. 또한, 반드시 제목은 **{query_timestamp}에 발생한 공격의 전후로그 분석**이라고 해야합니다. 응답은 반드시 markdown 형식을 반환합니다."
+
+                try:
+                    final_summary = text_response(client, "gpt-4o-mini", [{"role": "user", "content": final_prompt}])
+                    print(f"{query_timestamp}에 대한 최종 요약 완료.")
+                    # 모든 관련 로그를 한 번에 저장
+                    save_logs_to_file(all_related_logs, "related_logs.json") #확인용
+                    final_summaries.append(final_summary)  # 최종 요약만 리스트에 추가
+
+                except Exception as e:
+                    print(f"{query_timestamp}에 대한 최종 요약 생성 중 오류 발생: {str(e)}")
+                    return None
+
+
+        # 최종 결과 반환
+        return "\n\n---\n\n".join(final_summaries).strip()
+
 
 def extract_cloudTrail():
     """
     전체 로그 처리 및 요약.
     """
-    logs = fetch_all_logs_with_scroll()
+    attack_logs = fetch_attack_logs()
 
-    if not logs:
-        print("가져온 로그가 없습니다. 작업을 종료합니다.")
+    if not attack_logs:
+        print("가져온 공격 로그가 없습니다. 작업을 종료합니다.")
         return
-    # 전체 JSON 로그 개수 출력
-    print(f"가져온 전체 JSON 로그 개수: {len(logs)}")
-    
-    log_chunks = process_logs_by_token_limit(logs, token_limit=120000)
-    print(f"토큰 한계를 기준으로 총 {len(log_chunks)}개의 청크로 나누어졌습니다.")
 
-    # 각 청크의 JSON 개수 출력
-    for idx, chunk in enumerate(log_chunks, start=1):
-        print(f"Chunk {idx}의 JSON 개수: {len(chunk)}")
+    final_summary = fetch_related_logs_and_summarize(attack_logs)
+    save_logs_to_file(final_summary, "final_summary.md")
 
-    summarize_logs(log_chunks)
+
+    if final_summary:
+        print("최종 요약:")
+        print(final_summary)
+
 
 if __name__ == "__main__":
     start_time = time.time()
+    print("CloudTrail 로그 요약을 시작합니다...")
     extract_cloudTrail()
-    end_time = time.time()
-    elapsed_time = end_time - start_time
 
-    print(f"실행 시간: {elapsed_time:.2f}초")
+    print(f"실행 시간: {time.time() - start_time :.2f}초")

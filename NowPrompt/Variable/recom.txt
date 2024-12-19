@@ -1,4 +1,4 @@
-attack_type = "Execution, Command and Scripting Interpreter" 
+attack_type = "Persistence, Account Manipulation" 
 
 report = """ 
     # 공격 탐지 보고서
@@ -470,9 +470,4 @@ logs = """
         "mitreAttackTechniques": "T1087 - Account Discovery"
     }
 ]
-"""
-
-Subject = """
-    1. "ES": {이는 AWS CloudTrail 로그에 관한 질문을 처리하는 것입니다. ElasticSearch에는 AWS CloudTrail 로그가 저장되어 있습니다. }
-    2. "DB": {이는 AWS Cloud 자산에 대한 질문을 처리하는 것입니다. MongoDB에 AWS Cloud 자산이 저장되어 있으며, IAM 계정, EC2 인스턴스, S3 버킷과 같은 자산에 대한 상태와 속성정보 데이터를 관리합니다. "DB" 주제는 MongoDB에 저장된 CMDB 데이터와 연동된 자산 관련 질문을 처리하고, 효율적인 질의 생성 및 분석을 통해 자산 관리와 데이터 조회를 지원합니다. }
 """
