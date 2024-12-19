@@ -15,6 +15,7 @@ template_content = load_prompt(prompt_files["graph"])  # 파일 내용을 읽어
 logs = """[
     {
         "eventVersion": "1.09",
+        "eventVersion": "1.09",
         "userIdentity": {
             "type": "IAMUser",
             "principalId": "AIDA47CRYYD4VWJGA4YTZ",
@@ -29,6 +30,7 @@ logs = """[
         "awsRegion": "us-east-1",
         "sourceIPAddress": "211.212.221.147",
         "userAgent": "Boto3/1.35.15 md/Botocore#1.35.15 ua/2.0 os/macos#24.0.0 md/arch#arm64 lang/python#3.12.4 md/pyimpl#CPython cfg/retry-mode#adaptive Botocore/1.35.15",
+        "userAgent": "Boto3/1.35.15 md/Botocore#1.35.15 ua/2.0 os/macos#24.0.0 md/arch#arm64 lang/python#3.12.4 md/pyimpl#CPython cfg/retry-mode#adaptive Botocore/1.35.15",
         "requestParameters": {
             "roleName": "testrole",
             "policyDocument": "{\"Version\": \"2012-10-17\", \"Statement\": [{\"Effect\": \"Allow\", \"Principal\": {\"AWS\": [\"arn:aws:iam::891377205497:root\", \"arn:aws:iam::891377205497:user/dwbcf\"]}, \"Action\": \"sts:AssumeRole\"}]}"
@@ -40,16 +42,21 @@ logs = """[
         "eventType": "AwsApiCall",
         "managementEvent": true,
         "recipientAccountId": "891377205497",
+        "recipientAccountId": "891377205497",
         "eventCategory": "Management",
         "tlsDetails": {
             "tlsVersion": "TLSv1.3",
             "cipherSuite": "TLS_AES_128_GCM_SHA256",
             "clientProvidedHostHeader": "iam.amazonaws.com"
+            "clientProvidedHostHeader": "iam.amazonaws.com"
         },
+        "mitreAttackTactics": "TA0003 - Persistence",
+        "mitreAttackTechniques": "T1098 - Account Manipulation"
         "mitreAttackTactics": "TA0003 - Persistence",
         "mitreAttackTechniques": "T1098 - Account Manipulation"
     },
     {
+        "eventVersion": "1.09",
         "eventVersion": "1.09",
         "userIdentity": {
             "type": "IAMUser",
@@ -65,7 +72,9 @@ logs = """[
         "awsRegion": "us-east-1",
         "sourceIPAddress": "211.212.221.147",
         "userAgent": "Boto3/1.35.15 md/Botocore#1.35.15 ua/2.0 os/macos#24.0.0 md/arch#arm64 lang/python#3.12.4 md/pyimpl#CPython cfg/retry-mode#adaptive Botocore/1.35.15 Resource",
+        "userAgent": "Boto3/1.35.15 md/Botocore#1.35.15 ua/2.0 os/macos#24.0.0 md/arch#arm64 lang/python#3.12.4 md/pyimpl#CPython cfg/retry-mode#adaptive Botocore/1.35.15 Resource",
         "requestParameters": {
+            "roleName": "testrole"
             "roleName": "testrole"
         },
         "responseElements": null,
@@ -75,16 +84,21 @@ logs = """[
         "eventType": "AwsApiCall",
         "managementEvent": true,
         "recipientAccountId": "891377205497",
+        "recipientAccountId": "891377205497",
         "eventCategory": "Management",
         "tlsDetails": {
             "tlsVersion": "TLSv1.3",
             "cipherSuite": "TLS_AES_128_GCM_SHA256",
             "clientProvidedHostHeader": "iam.amazonaws.com"
+            "clientProvidedHostHeader": "iam.amazonaws.com"
         },
+        "mitreAttackTactics": "TA0007 - Discovery",
+        "mitreAttackTechniques": "T1087 - Account Discovery"
         "mitreAttackTactics": "TA0007 - Discovery",
         "mitreAttackTechniques": "T1087 - Account Discovery"
     },
     {
+        "eventVersion": "1.09",
         "eventVersion": "1.09",
         "userIdentity": {
             "type": "IAMUser",
@@ -102,6 +116,9 @@ logs = """[
         "userAgent": "Boto3/1.35.15 md/Botocore#1.35.15 ua/2.0 os/macos#24.0.0 md/arch#arm64 lang/python#3.12.4 md/pyimpl#CPython cfg/retry-mode#adaptive Botocore/1.35.15",
         "errorCode": "UnmodifiableEntityException",
         "errorMessage": "Cannot perform the operation on the protected role 'AWSServiceRoleForTrustedAdvisor' - this role is only modifiable by AWS",
+        "userAgent": "Boto3/1.35.15 md/Botocore#1.35.15 ua/2.0 os/macos#24.0.0 md/arch#arm64 lang/python#3.12.4 md/pyimpl#CPython cfg/retry-mode#adaptive Botocore/1.35.15",
+        "errorCode": "UnmodifiableEntityException",
+        "errorMessage": "Cannot perform the operation on the protected role 'AWSServiceRoleForTrustedAdvisor' - this role is only modifiable by AWS",
         "requestParameters": {
             "roleName": "AWSServiceRoleForTrustedAdvisor",
             "policyDocument": "{\"Version\": \"2012-10-17\", \"Statement\": [{\"Effect\": \"Allow\", \"Principal\": {\"Service\": \"trustedadvisor.amazonaws.com\", \"AWS\": \"arn:aws:iam::891377205497:user/dwbcf\"}, \"Action\": \"sts:AssumeRole\"}]}"
@@ -113,16 +130,21 @@ logs = """[
         "eventType": "AwsApiCall",
         "managementEvent": true,
         "recipientAccountId": "891377205497",
+        "recipientAccountId": "891377205497",
         "eventCategory": "Management",
         "tlsDetails": {
             "tlsVersion": "TLSv1.3",
             "cipherSuite": "TLS_AES_128_GCM_SHA256",
             "clientProvidedHostHeader": "iam.amazonaws.com"
+            "clientProvidedHostHeader": "iam.amazonaws.com"
         },
+        "mitreAttackTactics": "TA0003 - Persistence",
+        "mitreAttackTechniques": "T1098 - Account Manipulation"
         "mitreAttackTactics": "TA0003 - Persistence",
         "mitreAttackTechniques": "T1098 - Account Manipulation"
     },
     {
+        "eventVersion": "1.09",
         "eventVersion": "1.09",
         "userIdentity": {
             "type": "IAMUser",
@@ -138,7 +160,9 @@ logs = """[
         "awsRegion": "us-east-1",
         "sourceIPAddress": "211.212.221.147",
         "userAgent": "Boto3/1.35.15 md/Botocore#1.35.15 ua/2.0 os/macos#24.0.0 md/arch#arm64 lang/python#3.12.4 md/pyimpl#CPython cfg/retry-mode#adaptive Botocore/1.35.15 Resource",
+        "userAgent": "Boto3/1.35.15 md/Botocore#1.35.15 ua/2.0 os/macos#24.0.0 md/arch#arm64 lang/python#3.12.4 md/pyimpl#CPython cfg/retry-mode#adaptive Botocore/1.35.15 Resource",
         "requestParameters": {
+            "roleName": "AWSServiceRoleForTrustedAdvisor"
             "roleName": "AWSServiceRoleForTrustedAdvisor"
         },
         "responseElements": null,
@@ -148,16 +172,21 @@ logs = """[
         "eventType": "AwsApiCall",
         "managementEvent": true,
         "recipientAccountId": "891377205497",
+        "recipientAccountId": "891377205497",
         "eventCategory": "Management",
         "tlsDetails": {
             "tlsVersion": "TLSv1.3",
             "cipherSuite": "TLS_AES_128_GCM_SHA256",
             "clientProvidedHostHeader": "iam.amazonaws.com"
+            "clientProvidedHostHeader": "iam.amazonaws.com"
         },
+        "mitreAttackTactics": "TA0007 - Discovery",
+        "mitreAttackTechniques": "T1087 - Account Discovery"
         "mitreAttackTactics": "TA0007 - Discovery",
         "mitreAttackTechniques": "T1087 - Account Discovery"
     },
     {
+        "eventVersion": "1.09",
         "eventVersion": "1.09",
         "userIdentity": {
             "type": "IAMUser",
@@ -186,10 +215,12 @@ logs = """[
         "eventType": "AwsApiCall",
         "managementEvent": true,
         "recipientAccountId": "891377205497",
+        "recipientAccountId": "891377205497",
         "eventCategory": "Management",
         "tlsDetails": {
             "tlsVersion": "TLSv1.3",
             "cipherSuite": "TLS_AES_128_GCM_SHA256",
+            "clientProvidedHostHeader": "iam.amazonaws.com"
             "clientProvidedHostHeader": "iam.amazonaws.com"
         },
         "mitreAttackTactics": "TA0003 - Persistence",
@@ -221,12 +252,15 @@ logs = """[
         "eventType": "AwsApiCall",
         "managementEvent": true,
         "recipientAccountId": "891377205497",
+        "recipientAccountId": "891377205497",
         "eventCategory": "Management",
         "tlsDetails": {
             "tlsVersion": "TLSv1.3",
             "cipherSuite": "TLS_AES_128_GCM_SHA256",
             "clientProvidedHostHeader": "iam.amazonaws.com"
         },
+        "mitreAttackTactics": "TA0007 - Discovery",
+        "mitreAttackTechniques": "T1087 - Account Discovery"
         "mitreAttackTactics": "TA0007 - Discovery",
         "mitreAttackTechniques": "T1087 - Account Discovery"
     },
@@ -247,12 +281,15 @@ logs = """[
         "sourceIPAddress": "211.212.221.147",
         "userAgent": "Boto3/1.35.15 md/Botocore#1.35.15 ua/2.0 os/macos#24.0.0 md/arch#arm64 lang/python#3.12.4 md/pyimpl#CPython cfg/retry-mode#adaptive Botocore/1.35.15",
         "requestParameters": null,
+        "userAgent": "Boto3/1.35.15 md/Botocore#1.35.15 ua/2.0 os/macos#24.0.0 md/arch#arm64 lang/python#3.12.4 md/pyimpl#CPython cfg/retry-mode#adaptive Botocore/1.35.15",
+        "requestParameters": null,
         "responseElements": null,
         "requestID": "fa4780fe-3c31-428f-88de-25776675a486",
         "eventID": "0e470741-7aae-4bbe-ac46-d9838d76f98c",
         "readOnly": true,
         "eventType": "AwsApiCall",
         "managementEvent": true,
+        "recipientAccountId": "891377205497",
         "recipientAccountId": "891377205497",
         "eventCategory": "Management",
         "tlsDetails": {
@@ -262,8 +299,11 @@ logs = """[
         },
         "mitreAttackTactics": "TA0007 - Discovery",
         "mitreAttackTechniques": "T1087 - Account Discovery"
+        "mitreAttackTactics": "TA0007 - Discovery",
+        "mitreAttackTechniques": "T1087 - Account Discovery"
     },
     {
+        "eventVersion": "1.09",
         "eventVersion": "1.09",
         "userIdentity": {
             "type": "IAMUser",
@@ -287,16 +327,21 @@ logs = """[
         "eventType": "AwsApiCall",
         "managementEvent": true,
         "recipientAccountId": "891377205497",
+        "recipientAccountId": "891377205497",
         "eventCategory": "Management",
         "tlsDetails": {
             "tlsVersion": "TLSv1.3",
             "cipherSuite": "TLS_AES_128_GCM_SHA256",
             "clientProvidedHostHeader": "iam.amazonaws.com"
+            "clientProvidedHostHeader": "iam.amazonaws.com"
         },
+        "mitreAttackTactics": "TA0007 - Discovery",
+        "mitreAttackTechniques": "T1087 - Account Discovery"
         "mitreAttackTactics": "TA0007 - Discovery",
         "mitreAttackTechniques": "T1087 - Account Discovery"
     },
     {
+        "eventVersion": "1.09",
         "eventVersion": "1.09",
         "userIdentity": {
             "type": "IAMUser",
@@ -323,16 +368,21 @@ logs = """[
         "eventType": "AwsApiCall",
         "managementEvent": true,
         "recipientAccountId": "891377205497",
+        "recipientAccountId": "891377205497",
         "eventCategory": "Management",
         "tlsDetails": {
             "tlsVersion": "TLSv1.3",
             "cipherSuite": "TLS_AES_128_GCM_SHA256",
             "clientProvidedHostHeader": "iam.amazonaws.com"
+            "clientProvidedHostHeader": "iam.amazonaws.com"
         },
+        "mitreAttackTactics": "TA0007 - Discovery",
+        "mitreAttackTechniques": "T1087 - Account Discovery"
         "mitreAttackTactics": "TA0007 - Discovery",
         "mitreAttackTechniques": "T1087 - Account Discovery"
     },
     {
+        "eventVersion": "1.09",
         "eventVersion": "1.09",
         "userIdentity": {
             "type": "IAMUser",
@@ -349,6 +399,8 @@ logs = """[
         "sourceIPAddress": "211.212.221.147",
         "userAgent": "Boto3/1.35.15 md/Botocore#1.35.15 ua/2.0 os/macos#24.0.0 md/arch#arm64 lang/python#3.12.4 md/pyimpl#CPython cfg/retry-mode#adaptive Botocore/1.35.15",
         "requestParameters": null,
+        "userAgent": "Boto3/1.35.15 md/Botocore#1.35.15 ua/2.0 os/macos#24.0.0 md/arch#arm64 lang/python#3.12.4 md/pyimpl#CPython cfg/retry-mode#adaptive Botocore/1.35.15",
+        "requestParameters": null,
         "responseElements": null,
         "requestID": "f8f0cd9d-ebc1-4661-a72e-a2b2b00f6d2a",
         "eventID": "362cbd95-280a-4bb7-9d23-80078225d60a",
@@ -356,16 +408,21 @@ logs = """[
         "eventType": "AwsApiCall",
         "managementEvent": true,
         "recipientAccountId": "891377205497",
+        "recipientAccountId": "891377205497",
         "eventCategory": "Management",
         "tlsDetails": {
             "tlsVersion": "TLSv1.3",
             "cipherSuite": "TLS_AES_128_GCM_SHA256",
             "clientProvidedHostHeader": "iam.amazonaws.com"
+            "clientProvidedHostHeader": "iam.amazonaws.com"
         },
+        "mitreAttackTactics": "TA0007 - Discovery",
+        "mitreAttackTechniques": "T1087 - Account Discovery"
         "mitreAttackTactics": "TA0007 - Discovery",
         "mitreAttackTechniques": "T1087 - Account Discovery"
     },
     {
+        "eventVersion": "1.09",
         "eventVersion": "1.09",
         "userIdentity": {
             "type": "IAMUser",
@@ -388,6 +445,7 @@ logs = """[
         "readOnly": true,
         "eventType": "AwsApiCall",
         "managementEvent": true,
+        "recipientAccountId": "891377205497",
         "recipientAccountId": "891377205497",
         "eventCategory": "Management",
         "tlsDetails": {
@@ -444,4 +502,9 @@ prompt_txt = {"graph": {"role": "system", "content": template_content}}
 report_response = generate_response(client, "gpt-4o-mini", [prompt_txt["graph"]])
 print_response("그래프 데이터", report_response)
 
+# '"""'와 'javascript'를 제외한 응답 생성
+filtered_response = report_response.replace('"""', '').replace('javascript', '')
+
+# 필터링된 응답 출력
+print_response("그래프 데이터", filtered_response)
 
