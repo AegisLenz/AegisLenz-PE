@@ -271,7 +271,10 @@ def fetch_related_logs_and_summarize(attack_logs):
                     print(f"{query_timestamp}에 대한 최종 요약 완료.")
                     # 모든 관련 로그를 한 번에 저장
                     save_logs_to_file(all_related_logs, "related_logs.json") #확인용
-                    final_summaries.append(final_summary)  # 최종 요약만 리스트에 추가
+
+                    # '"""'와 'javascript'를 제외한 응답 생성
+                    filtered_response = final_summary.replace('"""', '').replace('markdown', '')
+                    final_summaries.append(filtered_response)  # 최종 요약만 리스트에 추가
 
                 except Exception as e:
                     print(f"{query_timestamp}에 대한 최종 요약 생성 중 오류 발생: {str(e)}")
