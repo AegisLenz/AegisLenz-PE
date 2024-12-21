@@ -14,7 +14,7 @@ content = load_prompt(prompt_files["init"])  # 파일 내용을 읽어옴
 template_content = load_prompt(prompt_files["report"])  
 
 attack_time =  "2024년 09월 21일 07:50 KST"
-attack_type = "Persistence, Account Manipulation" 
+attack_type = "Discovery, Account Discovery" 
 logs = """
 [
     {
