@@ -149,6 +149,23 @@ Log가 저장된 ElasticSearch index의 형식은 아래 {mapping} 부분을 참
 셋째, eventname이 CamelCase형식인 필드는 반드시 term을 이용해야 합니다. 반면에, eventname이 CamelCase형식이 아닌 필드는 반드시 prefix를 이용해야 합니다.
 넷째, 질문에서 사용자가 요구하는 특정 필드가 있다면 _source 쿼리를 이용해서 결과에서 원하는 필드만 선택적으로 반환해야 합니다.
 다섯째, 만약 사용자의 쿼리에 대한 요청이 있더라도, 항상 문법에 맞는 정확한 쿼리만 반환해야 합니다.
+여섯번째, must_not 구문은 bool 쿼리 안에서만 사용 가능합니다. 쿼리를 수정해 must_not을 올바른 위치로 이동시켜야 합니다.
+  예제:
+  {
+    "query": {
+      "bool": {
+        "must": [
+          { "range": { "timestamp": { "gte": "2024-12-18T00:00:00", "lt": "2024-12-19T00:00:00" } } },
+          { "term": { "eventName": "ConsoleLogin" } }
+        ],
+        "must_not": [
+          { "terms": { "userIdentity.userName": ["user1", "user2"] } }
+        ]
+      }
+    }
+  }
+
+
 
 아래의 자연어 질문을 DSL query로 변환하세요.
 사용자가 자연어로 입력한 질문은 다음과 같습니다.
