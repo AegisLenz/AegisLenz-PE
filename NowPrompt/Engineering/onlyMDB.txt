@@ -355,30 +355,37 @@
         ],
         "cursor": {}
     }
+   
     
-
 ***사용자 질의*** : "전체 IAM 사용자 개수 알려줘"
-***응답*** : 
+***응답*** :
     {
         "aggregate": "user_assets",
         "pipeline": [
             {
                 "$match": {
-                    "asset.EC2": {
-                        "$elemMatch": {
-                            "LaunchTime": {
-                                "$lt": "2024-11-19T14:39:02"
-                            }
-                        }
-                    }
+                    "asset.IAM.UserId": { "$exists": true }
                 }
             },
             {
-                "$count": "ec2_instances_count"
+                "$unwind": "$asset.IAM"
+            },
+            {
+                "$group": {
+                    "_id": "$asset.IAM.UserId"
+                }
+            },
+            {
+                "$group": {
+                    "_id": null,
+                    "total_users": { "$sum": 1 }
+                }
             }
         ],
         "cursor": {}
     }
+
+
     
 아래의 자연어 질문을 MongoDB를 조회하는 쿼리로 변환하세요. 모든 응답은 반드시 JSON 형식이어야 합니다.
 사용자가 자연어로 입력한 질문은 다음과 같습니다.
